@@ -1,0 +1,58 @@
+{
+  "yard": {
+    "width": 9,
+    "height": 6,
+    "min_clearance": 1,
+    "zones": ["lane-a", "lane-b"]
+  },
+  "blocks": [
+    {
+      "id": "A",
+      "width": 2,
+      "height": 2,
+      "release_time": 0,
+      "due_time": 3,
+      "priority": 2
+    },
+    {
+      "id": "B",
+      "width": 2,
+      "height": 2,
+      "release_time": 0,
+      "due_time": 4,
+      "priority": 1
+    },
+    {
+      "id": "C",
+      "width": 3,
+      "height": 2,
+      "release_time": 0,
+      "due_time": 5,
+      "priority": 1
+    },
+    {
+      "id": "D",
+      "width": 2,
+      "height": 3,
+      "release_time": 1,
+      "due_time": 5,
+      "priority": 0
+    },
+    {
+      "id": "E",
+      "width": 2,
+      "height": 2,
+      "release_time": 2,
+      "due_time": 6,
+      "priority": 0
+    },
+    {
+      "id": "F",
+      "width": 3,
+      "height": 2,
+      "release_time": 3,
+      "due_time": 7,
+      "priority": 0
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+html {
+  font-family: Georgia, 'Times New Roman', serif;
+  color: #1f2933;
+  background:
+    radial-gradient(circle at top left, rgba(240, 138, 36, 0.18), transparent 28%),
+    radial-gradient(circle at top right, rgba(11, 110, 79, 0.14), transparent 22%),
+    linear-gradient(180deg, #f8f5ef 0%, #f0e8da 100%);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+a {
+  color: inherit;
+}
+
+code {
+  font-family: 'Cascadia Code', Consolas, monospace;
+  background: rgba(255, 250, 241, 0.9);
+  border: 1px solid rgba(217, 203, 182, 0.9);
+  border-radius: 10px;
+  padding: 0.18rem 0.42rem;
+}
+
+#root {
+  min-height: 100vh;
+}

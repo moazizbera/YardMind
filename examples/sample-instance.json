@@ -1,0 +1,34 @@
+{
+  "yard": {
+    "width": 12,
+    "height": 10,
+    "min_clearance": 1,
+    "zones": ["north", "south"]
+  },
+  "blocks": [
+    {
+      "id": "B1",
+      "width": 4,
+      "height": 3,
+      "release_time": 0,
+      "due_time": 5,
+      "priority": 2
+    },
+    {
+      "id": "B2",
+      "width": 3,
+      "height": 2,
+      "release_time": 1,
+      "due_time": 6,
+      "priority": 1
+    },
+    {
+      "id": "B3",
+      "width": 5,
+      "height": 3,
+      "release_time": 4,
+      "due_time": 9,
+      "priority": 0
+    }
+  ]
+}

@@ -1,0 +1,88 @@
+{
+  "name": "official-sample-instance",
+  "bays": [
+    {
+      "width": 10,
+      "height": 6
+    },
+    {
+      "width": 8,
+      "height": 6
+    }
+  ],
+  "blocks": [
+    {
+      "release_time": 0,
+      "due_date": 4,
+      "processing_time": 4,
+      "workload": 10,
+      "bay_preferences": [
+        10,
+        5
+      ],
+      "shape": [
+        {
+          "orientation": 0,
+          "layers": [
+            [
+              [0, 0],
+              [3, 0],
+              [3, 2],
+              [0, 2]
+            ]
+          ]
+        },
+        {
+          "orientation": 1,
+          "layers": [
+            [
+              [0, 0],
+              [2, 0],
+              [2, 3],
+              [0, 3]
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "release_time": 1,
+      "due_date": 6,
+      "processing_time": 5,
+      "workload": 8,
+      "bay_preferences": [
+        4,
+        9
+      ],
+      "shape": [
+        {
+          "orientation": 0,
+          "layers": [
+            [
+              [0, 0],
+              [2, 0],
+              [2, 2],
+              [0, 2]
+            ]
+          ]
+        },
+        {
+          "orientation": 1,
+          "layers": [
+            [
+              [0, 0],
+              [1, 0],
+              [1, 4],
+              [0, 4]
+            ]
+          ]
+        }
+      ]
+    }
+  ],
+  "weights": {
+    "w1": 10,
+    "w2": 3,
+    "w3": 1
+  }
+}

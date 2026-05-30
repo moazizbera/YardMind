@@ -1,0 +1,66 @@
+{
+  "name": "official-stage3-instance",
+  "bays": [
+    {
+      "width": 10,
+      "height": 10
+    }
+  ],
+  "blocks": [
+    {
+      "release_time": 0,
+      "due_date": 4,
+      "processing_time": 4,
+      "workload": 5,
+      "bay_preferences": [
+        100
+      ],
+      "shape": [
+        {
+          "orientation": 0,
+          "layers": [
+            [
+              [0, 0],
+              [2, 0],
+              [2, 2],
+              [0, 2]
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "release_time": 1,
+      "due_date": 6,
+      "processing_time": 5,
+      "workload": 5,
+      "bay_preferences": [
+        100
+      ],
+      "shape": [
+        {
+          "orientation": 0,
+          "layers": [
+            [
+              [0, 0],
+              [2, 0],
+              [2, 2],
+              [0, 2]
+            ],
+            [
+              [-3, 0],
+              [-1, 0],
+              [-1, 2],
+              [-3, 2]
+            ]
+          ]
+        }
+      ]
+    }
+  ],
+  "weights": {
+    "w1": 10,
+    "w2": 3,
+    "w3": 1
+  }
+}

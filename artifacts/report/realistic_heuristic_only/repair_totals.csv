@@ -1,0 +1,4 @@
+name,attempts,feasible_candidates,accepted_candidates,improved_candidates
+best_of_top,27,18,1,1
+sampled_greedy,48,30,5,5
+spread,45,42,4,4

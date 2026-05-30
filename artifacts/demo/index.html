@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>YardMind Demo</title>
+  <style>
+    :root {
+      --bg: #f5f1e8;
+      --panel: #fffaf1;
+      --ink: #1f2933;
+      --muted: #52606d;
+      --accent: #0b6e4f;
+      --accent-2: #f08a24;
+      --edge: #d9cbb6;
+      --good: #1f7a4c;
+      --warn: #a65a00;
+      --shadow: 0 18px 40px rgba(31, 41, 51, 0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(240, 138, 36, 0.16), transparent 30%),
+        radial-gradient(circle at top right, rgba(11, 110, 79, 0.12), transparent 24%),
+        linear-gradient(180deg, #f8f5ef 0%, var(--bg) 100%);
+    }
+    .shell { max-width: 1180px; margin: 0 auto; padding: 32px 24px 56px; }
+    .hero { display: grid; gap: 20px; margin-bottom: 28px; }
+    .eyebrow { text-transform: uppercase; letter-spacing: 0.16em; font-size: 12px; color: var(--accent); font-weight: 700; }
+    h1 { margin: 0; font-size: clamp(38px, 6vw, 72px); line-height: 0.94; }
+    .lead { margin: 0; max-width: 760px; color: var(--muted); font-size: 18px; line-height: 1.5; }
+    .grid { display: grid; gap: 18px; }
+    .cards { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-bottom: 28px; }
+    .card, .panel { background: var(--panel); border: 1px solid var(--edge); border-radius: 22px; box-shadow: var(--shadow); }
+    .card { padding: 18px 18px 16px; }
+    .metric { font-size: 30px; font-weight: 700; margin-top: 8px; }
+    .label { color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; }
+    .panels { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); margin-bottom: 28px; }
+    .panel { padding: 18px; }
+    .panel h2 { margin: 0 0 8px; font-size: 24px; }
+    .panel p { margin: 0 0 16px; color: var(--muted); line-height: 1.45; }
+    .yard { width: 100%; height: auto; border-radius: 18px; background: #fcf7ef; border: 1px solid var(--edge); }
+    .legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; color: var(--muted); font-size: 13px; }
+    .pill { padding: 6px 10px; border-radius: 999px; background: rgba(11, 110, 79, 0.08); }
+    .official-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-top: 14px; }
+    .bay-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-top: 12px; }
+    .bay-card { border: 1px solid var(--edge); border-radius: 18px; padding: 12px; background: #fffdf8; }
+    .bay-title { margin: 0 0 8px; font-size: 15px; font-weight: 700; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { padding: 10px 8px; border-bottom: 1px solid var(--edge); text-align: left; }
+    th { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; }
+    .delta-positive { color: var(--good); }
+    .delta-negative { color: var(--warn); }
+    .footer { margin-top: 18px; color: var(--muted); font-size: 14px; }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <div class="eyebrow">YardMind Presentation Layer</div>
+      <h1>Retrieval-aware yard planning you can actually show.</h1>
+      <p class="lead">This static demo page visualizes the current development solver path for <strong>sample-instance</strong>, compares constructive versus local-search results, and turns the CLI-first prototype into something you can open in a browser for demos and pitch reviews.</p>
+    </section>
+
+    <section class="grid cards">
+      <article class="card"><div class="label">Instance</div><div class="metric">sample-instance</div></article>
+      <article class="card"><div class="label">Blocks</div><div class="metric">3</div></article>
+      <article class="card"><div class="label">Constructive Objective</div><div class="metric">-5.3860</div></article>
+      <article class="card"><div class="label">Search Objective</div><div class="metric">-5.3860</div></article>
+      <article class="card"><div class="label">Search Delta</div><div class="metric delta-positive">+0.0000</div></article>
+      <article class="card"><div class="label">Search Config</div><div class="metric">8 iters / seed 11</div></article>
+    </section>
+
+    <section class="grid panels">
+      <article class="panel">
+        <h2>Constructive Baseline</h2>
+        <p>Fast feasibility-first placement for the development yard.</p>
+        <svg class="yard" viewBox="0 0 408 340" role="img" aria-label="Yard layout"><rect x="0" y="0" width="408" height="340" fill="#f7efe2" stroke="#d9cbb6" stroke-width="3" rx="18" /><g><rect x="0" y="238" width="136" height="102" fill="#0b6e4f" fill-opacity="0.88" rx="10" /><text x="10" y="262" font-size="16" fill="#fff" font-weight="700">B1</text><text x="10" y="282" font-size="12" fill="#fff">t=0-5</text></g><g><rect x="306" y="272" width="102" height="68" fill="#f08a24" fill-opacity="0.88" rx="10" /><text x="316" y="296" font-size="16" fill="#fff" font-weight="700">B2</text><text x="316" y="316" font-size="12" fill="#fff">t=1-6</text></g><g><rect x="136" y="0" width="170" height="102" fill="#8f5ea2" fill-opacity="0.88" rx="10" /><text x="146" y="24" font-size="16" fill="#fff" font-weight="700">B3</text><text x="146" y="44" font-size="12" fill="#fff">t=4-9</text></g></svg>
+        <div class="legend"><span class="pill">Area 0.2750</span><span class="pill">Lateness 0.00</span><span class="pill">Retrieval Risk 2.09</span><span class="pill">Congestion 3.57</span></div>
+      </article>
+      <article class="panel">
+        <h2>Official Constructive Comparison</h2>
+        <p>The same browser view now summarizes delegated versus YardMind-native official constructive results on the public official sample.</p>
+        <div class="legend"><span class="pill">Official instance official-sample-instance</span><span class="pill">Delegated Baseline obj 0.0000</span><span class="pill">Native Constructive obj 0.0000</span><span class="pill">Objective delta +0.0000</span><span class="pill">Delegated runtime 0.731027s</span><span class="pill">Native runtime 0.001081s</span><span class="pill">Runtime ratio 676.44x</span><span class="pill">Native feasible yes</span></div><div class="official-grid"><div class="bay-card"><div class="bay-title">Delegated Baseline</div><div class="legend"><span class="pill">Assignments 2</span><span class="pill">Stage 5</span></div><div class="bay-grid"><div class="bay-card"><div class="bay-title">Bay 0</div><svg class="yard" viewBox="0 0 220 132" role="img" aria-label="Official bay layout"><rect x="0" y="0" width="220" height="132" fill="#f7efe2" stroke="#d9cbb6" stroke-width="2" rx="14" /><g><rect x="0" y="88" width="66" height="44" fill="#0b6e4f" fill-opacity="0.88" rx="8" /><text x="8" y="106" font-size="11" fill="#fff" font-weight="700">Block 0</text><text x="8" y="122" font-size="10" fill="#fff">t=0-4</text></g></svg></div><div class="bay-card"><div class="bay-title">Bay 1</div><svg class="yard" viewBox="0 0 216 162" role="img" aria-label="Official bay layout"><rect x="0" y="0" width="216" height="162" fill="#f7efe2" stroke="#d9cbb6" stroke-width="2" rx="14" /><g><rect x="0" y="108" width="54" height="54" fill="#0b6e4f" fill-opacity="0.88" rx="8" /><text x="8" y="126" font-size="11" fill="#fff" font-weight="700">Block 1</text><text x="8" y="142" font-size="10" fill="#fff">t=1-6</text></g></svg></div></div></div><div class="bay-card"><div class="bay-title">Native Constructive</div><div class="legend"><span class="pill">Assignments 2</span><span class="pill">Stage 5</span></div><div class="bay-grid"><div class="bay-card"><div class="bay-title">Bay 0</div><svg class="yard" viewBox="0 0 220 132" role="img" aria-label="Official bay layout"><rect x="0" y="0" width="220" height="132" fill="#f7efe2" stroke="#d9cbb6" stroke-width="2" rx="14" /><g><rect x="0" y="88" width="66" height="44" fill="#0b6e4f" fill-opacity="0.88" rx="8" /><text x="8" y="106" font-size="11" fill="#fff" font-weight="700">Block 0</text><text x="8" y="122" font-size="10" fill="#fff">t=0-4</text></g></svg></div><div class="bay-card"><div class="bay-title">Bay 1</div><svg class="yard" viewBox="0 0 216 162" role="img" aria-label="Official bay layout"><rect x="0" y="0" width="216" height="162" fill="#f7efe2" stroke="#d9cbb6" stroke-width="2" rx="14" /><g><rect x="0" y="108" width="54" height="54" fill="#0b6e4f" fill-opacity="0.88" rx="8" /><text x="8" y="126" font-size="11" fill="#fff" font-weight="700">Block 1</text><text x="8" y="142" font-size="10" fill="#fff">t=1-6</text></g></svg></div></div></div></div>
+      </article>
+      <article class="panel">
+        <h2>Local Search Incumbent</h2>
+        <p>Destroy/repair search with best feasible incumbent preservation.</p>
+        <svg class="yard" viewBox="0 0 408 340" role="img" aria-label="Yard layout"><rect x="0" y="0" width="408" height="340" fill="#f7efe2" stroke="#d9cbb6" stroke-width="3" rx="18" /><g><rect x="0" y="238" width="136" height="102" fill="#0b6e4f" fill-opacity="0.88" rx="10" /><text x="10" y="262" font-size="16" fill="#fff" font-weight="700">B1</text><text x="10" y="282" font-size="12" fill="#fff">t=0-5</text></g><g><rect x="306" y="272" width="102" height="68" fill="#f08a24" fill-opacity="0.88" rx="10" /><text x="316" y="296" font-size="16" fill="#fff" font-weight="700">B2</text><text x="316" y="316" font-size="12" fill="#fff">t=1-6</text></g><g><rect x="136" y="0" width="170" height="102" fill="#8f5ea2" fill-opacity="0.88" rx="10" /><text x="146" y="24" font-size="16" fill="#fff" font-weight="700">B3</text><text x="146" y="44" font-size="12" fill="#fff">t=4-9</text></g></svg>
+        <div class="legend"><span class="pill">Area 0.2750</span><span class="pill">Lateness 0.00</span><span class="pill">Retrieval Risk 2.09</span><span class="pill">Congestion 3.57</span></div>
+      </article>
+    </section>
+
+    <section class="panel">
+      <h2>Search Trace</h2>
+      <p>The current development search loop is still heuristic, but this makes the operator flow visible for demos.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Iter</th>
+            <th>Destroy</th>
+            <th>Repair</th>
+            <th>Feasible</th>
+            <th>Candidate Obj</th>
+            <th>Best Obj</th>
+            <th>Accepted</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>high_risk_cluster_k3</td><td>best_of_top</td><td>yes</td><td>-5.4429</td><td>-5.3860</td><td>no</td></tr>
+<tr><td>2</td><td>global_restart</td><td>bounded_exact</td><td>yes</td><td>-5.3860</td><td>-5.3860</td><td>no</td></tr>
+<tr><td>3</td><td>high_risk_cluster_k3</td><td>best_of_top</td><td>yes</td><td>-5.4429</td><td>-5.3860</td><td>no</td></tr>
+<tr><td>4</td><td>high_risk_cluster</td><td>best_of_top</td><td>yes</td><td>-5.4429</td><td>-5.3860</td><td>no</td></tr>
+<tr><td>5</td><td>congestion_cluster_k3</td><td>spread</td><td>yes</td><td>-5.3860</td><td>-5.3860</td><td>no</td></tr>
+<tr><td>6</td><td>high_risk_cluster</td><td>bounded_exact</td><td>yes</td><td>-5.3860</td><td>-5.3860</td><td>no</td></tr>
+<tr><td>7</td><td>high_risk_cluster</td><td>spread</td><td>yes</td><td>-5.3860</td><td>-5.3860</td><td>no</td></tr>
+<tr><td>8</td><td>congestion_cluster_k3</td><td>sampled_greedy</td><td>yes</td><td>-5.4364</td><td>-5.3860</td><td>no</td></tr>
+        </tbody>
+      </table>
+        <div class="footer">The demo now combines the development solver story with the current official constructive comparison story in one browser-viewable artifact.</div>
+    </section>
+  </main>
+</body>
+</html>

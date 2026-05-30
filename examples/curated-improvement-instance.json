@@ -1,0 +1,42 @@
+{
+  "yard": {
+    "width": 8,
+    "height": 5,
+    "min_clearance": 0,
+    "zones": []
+  },
+  "blocks": [
+    {
+      "id": "A",
+      "width": 2,
+      "height": 2,
+      "release_time": 0,
+      "due_time": 3,
+      "priority": 1
+    },
+    {
+      "id": "B",
+      "width": 2,
+      "height": 2,
+      "release_time": 0,
+      "due_time": 4,
+      "priority": 0
+    },
+    {
+      "id": "C",
+      "width": 3,
+      "height": 2,
+      "release_time": 0,
+      "due_time": 5,
+      "priority": 2
+    },
+    {
+      "id": "D",
+      "width": 2,
+      "height": 2,
+      "release_time": 0,
+      "due_time": 6,
+      "priority": 0
+    }
+  ]
+}
