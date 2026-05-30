@@ -168,7 +168,10 @@ td {
 .story-grid,
 .visual-grid,
 .official-grid,
-.spotlight-grid {
+.spotlight-grid,
+.judge-case-grid,
+.decision-grid,
+.baseline-strip {
   display: grid;
   gap: 18px;
 }
@@ -266,8 +269,128 @@ td {
 .spotlight-grid,
 .story-grid,
 .visual-grid,
-.official-grid {
+.official-grid,
+.judge-case-grid,
+.decision-grid {
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+.baseline-strip {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.baseline-strip-card strong {
+  font-size: 1.4rem;
+}
+
+.matrix-card {
+  padding: 24px;
+  display: grid;
+  gap: 18px;
+}
+
+.matrix-table td:first-child,
+.matrix-table th:first-child {
+  min-width: 170px;
+}
+
+.decision-card {
+  min-height: 260px;
+}
+
+.comparison-table-shell {
+  overflow: auto;
+}
+
+.comparison-table {
+  min-width: 100%;
+}
+
+.table-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.28rem 0.58rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.table-status.good {
+  background: rgba(52, 211, 153, 0.14);
+  color: #bbf7d0;
+  border: 1px solid rgba(52, 211, 153, 0.25);
+}
+
+.table-status.bad {
+  background: rgba(248, 113, 113, 0.14);
+  color: #fecaca;
+  border: 1px solid rgba(248, 113, 113, 0.25);
+}
+
+.judge-case-card {
+  min-height: 210px;
+}
+
+.workflow-section {
+  padding: 24px;
+  display: grid;
+  gap: 18px;
+}
+
+.proof-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
+}
+
+.proof-card {
+  padding: 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  background: rgba(7, 24, 36, 0.72);
+  display: grid;
+  gap: 8px;
+}
+
+.proof-card strong {
+  color: #f8fbff;
+  font-size: 1.5rem;
+  font-family: 'Space Grotesk', 'Manrope', system-ui, sans-serif;
+}
+
+.workflow-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.workflow-step {
+  padding: 16px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(8, 28, 40, 0.88), rgba(7, 19, 29, 0.74));
+  border: 1px solid rgba(125, 211, 252, 0.12);
+  display: grid;
+  gap: 10px;
+}
+
+.workflow-step p {
+  margin: 0;
+  color: rgba(226, 232, 240, 0.82);
+}
+
+.workflow-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: rgba(103, 232, 249, 0.12);
+  color: #8be5f4;
+  font-family: 'Space Grotesk', 'Manrope', system-ui, sans-serif;
+  font-weight: 700;
 }
 
 .judge-banner {

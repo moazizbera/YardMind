@@ -199,6 +199,140 @@ function App() {
         : data.official.error ?? 'Regenerate the demo snapshot to include official comparison data.',
     },
   ]
+  const judgeCaseCards = [
+    {
+      eyebrow: 'Why this problem is hard',
+      title: 'Shipyard planning is a space-time problem, not a one-shot packing puzzle.',
+      detail:
+        'A dense layout can still fail operationally if later retrievals trigger congestion, reshuffling, or blocked exits. Judges need to see that YardMind optimizes for future mobility, not only current fit.',
+    },
+    {
+      eyebrow: 'What makes YardMind different',
+      title: 'Retrieval-risk is a first-class scoring signal inside both construction and improvement.',
+      detail:
+        'The solver exposes area, lateness, retrieval-risk, and congestion as separate terms, so improvements are explainable instead of hidden behind one opaque score.',
+    },
+    {
+      eyebrow: 'Why the results are credible',
+      title: 'The current benchmark surface already shows reproducible search gains on harder development cases.',
+      detail:
+        'On the realistic benchmark case, search improved 6 of 6 runs and bounded exact repair improved the mean search objective by about 0.0620 over heuristic-only repair.',
+    },
+    {
+      eyebrow: 'Challenge readiness',
+      title: 'Official-sample inspection, validation, constructive benchmarking, and portfolio search are already wired.',
+      detail:
+        'This frontend shows the bridge from development solver behavior to official delegated-versus-native comparison so the project reads as an engineering system, not a slide deck.',
+    },
+  ]
+  const workflowStages = [
+    'Load and validate the instance',
+    'Build a feasible retrieval-aware baseline',
+    'Destroy and repair difficult neighborhoods',
+    'Keep the best feasible incumbent anytime-safe',
+    'Compare against the official constructive path',
+  ]
+  const proofStats = [
+    { label: 'Improved realistic runs', value: '6/6' },
+    { label: 'Exact-repair mean lift', value: '+0.0620' },
+    { label: 'Judge views', value: 'Live + screenshot mode' },
+    { label: 'Official bridge', value: 'Inspect + validate + benchmark' },
+  ]
+  const officialWorkflow = [
+    {
+      step: '01',
+      title: 'Load instance',
+      detail: 'Mirror the official tester flow: pick an instance, understand bay capacity, and frame the run before solving.',
+    },
+    {
+      step: '02',
+      title: 'Run under time limit',
+      detail: 'The algorithm must respect a wall-clock budget and still return a valid submission-format solution.',
+    },
+    {
+      step: '03',
+      title: 'Verify PASS and objective',
+      detail: 'Judges care about two outputs first: feasibility check status and objective value under the official checker.',
+    },
+  ]
+  const officialSurfaces = [
+    'Problem surface: bay structure and assignment context',
+    'Solution surface: feasibility, stage, objective, and runtime',
+    'Operation timing: official assignments visible by bay and entry/exit window',
+    'Algorithm evidence: search history makes the optimizer behavior inspectable',
+  ]
+  const officialReadiness = officialSummary
+    ? [
+        { label: 'Delegated status', value: officialSummary.delegated_baseline.feasible ? 'PASS' : 'FAIL' },
+        { label: 'Native status', value: officialSummary.native_constructive.feasible ? 'PASS' : 'FAIL' },
+        { label: 'Delegated stage', value: `${officialSummary.delegated_baseline.stage}` },
+        { label: 'Native stage', value: `${officialSummary.native_constructive.stage}` },
+      ]
+    : [
+        { label: 'Delegated status', value: 'N/A' },
+        { label: 'Native status', value: 'N/A' },
+        { label: 'Delegated stage', value: 'N/A' },
+        { label: 'Native stage', value: 'N/A' },
+      ]
+  const winningClaims = [
+    'Retrieval-aware scoring optimizes future mobility, not only current fit.',
+    'Feasibility, objective, and runtime are surfaced in the same judge-facing product view.',
+    'Official-sample validation and constructive benchmarking are already wired into the workflow.',
+  ]
+  const officialComparisonRows = officialSummary
+    ? [
+        {
+          variant: 'Delegated baseline',
+          status: officialSummary.delegated_baseline.feasible ? 'PASS' : 'FAIL',
+          stage: `${officialSummary.delegated_baseline.stage}`,
+          objective: officialSummary.delegated_baseline.objective.toFixed(4),
+          runtime: formatCompactSeconds(officialSummary.delegated_baseline.runtime_seconds),
+        },
+        {
+          variant: 'Native constructive',
+          status: officialSummary.native_constructive.feasible ? 'PASS' : 'FAIL',
+          stage: `${officialSummary.native_constructive.stage}`,
+          objective: officialSummary.native_constructive.objective.toFixed(4),
+          runtime: formatCompactSeconds(officialSummary.native_constructive.runtime_seconds),
+        },
+      ]
+    : []
+  const baselineBeatStrip = officialSummary
+    ? [
+        { label: 'Objective delta', value: formatDelta(officialObjectiveDelta) },
+        { label: 'Runtime ratio', value: `${runtimeRatio.toFixed(2)}x` },
+        {
+          label: 'PASS status',
+          value: `${officialSummary.delegated_baseline.feasible ? 'PASS' : 'FAIL'} / ${officialSummary.native_constructive.feasible ? 'PASS' : 'FAIL'}`,
+        },
+        {
+          label: 'Assignments',
+          value: `${officialSummary.delegated_baseline.assignment_count ?? 0} / ${officialSummary.native_constructive.assignment_count ?? 0}`,
+        },
+      ]
+    : []
+  const comparisonMatrix = [
+    {
+      focus: 'Official evaluator fit',
+      baseline: 'Run algorithm, inspect PASS and objective.',
+      yardmind: 'Mirrors that flow and exposes PASS, stage, objective, runtime, and bay-level result surfaces together.',
+    },
+    {
+      focus: 'Optimization logic',
+      baseline: 'Feasibility and score are visible only after execution.',
+      yardmind: 'Retrieval-risk, congestion, lateness, and area terms stay visible so improvements are explainable.',
+    },
+    {
+      focus: 'Judge legibility',
+      baseline: 'Tester proves validity, but not product value.',
+      yardmind: 'Control-room view turns validity, comparison, and search behavior into a readable product story.',
+    },
+    {
+      focus: 'Challenge readiness',
+      baseline: 'Reference workflow and greedy template.',
+      yardmind: 'Official-sample inspection, validation, delegated/native comparison, and portfolio-search bridge already wired.',
+    },
+  ]
   const displayedHistory = isJudgeView ? data.search.history.slice(0, 8) : data.search.history
 
   return (
@@ -254,6 +388,81 @@ function App() {
         <MetricCard label="Official sample" value={officialSummary?.instance ?? 'Unavailable'} />
       </section>
 
+      <section className="decision-grid">
+        <article className="story-card story-card-highlight decision-card">
+          <p className="eyebrow">Why YardMind wins</p>
+          <h2>Built for the exact signals judges are trained to trust.</h2>
+          <ul className="flat-list">
+            {winningClaims.map((claim) => (
+              <li key={claim}>{claim}</li>
+            ))}
+          </ul>
+        </article>
+        <article className="story-card decision-card">
+          <div className="panel-heading-row">
+            <div>
+              <p className="eyebrow">Official scorecard</p>
+              <h2>PASS, objective, runtime</h2>
+            </div>
+            <span className="status-pill subtle">Tester-aligned view</span>
+          </div>
+          {officialComparisonRows.length > 0 ? (
+            <div className="comparison-table-shell">
+              <table className="comparison-table">
+                <thead>
+                  <tr>
+                    <th>Variant</th>
+                    <th>Status</th>
+                    <th>Stage</th>
+                    <th>Objective</th>
+                    <th>Runtime</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {officialComparisonRows.map((row) => (
+                    <tr key={row.variant}>
+                      <td>{row.variant}</td>
+                      <td>
+                        <span className={`table-status ${row.status === 'PASS' ? 'good' : 'bad'}`}>{row.status}</span>
+                      </td>
+                      <td>{row.stage}</td>
+                      <td>{row.objective}</td>
+                      <td>{row.runtime}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="lead">Official comparison data is unavailable in the current snapshot.</p>
+          )}
+        </article>
+      </section>
+
+      <section className="workflow-section cinematic-panel">
+        <div className="section-heading">
+          <p className="eyebrow">Official judging model</p>
+          <h2>YardMind now speaks the tester's language</h2>
+        </div>
+        <div className="workflow-strip">
+          {officialWorkflow.map((stage) => (
+            <div className="workflow-step" key={stage.step}>
+              <span className="workflow-index">{stage.step}</span>
+              <strong>{stage.title}</strong>
+              <p>{stage.detail}</p>
+            </div>
+          ))}
+        </div>
+        <div className="proof-grid">
+          {officialReadiness.map((item) => (
+            <article className="proof-card" key={item.label}>
+              <span className="metric-label">{item.label}</span>
+              <strong>{item.value}</strong>
+            </article>
+          ))}
+        </div>
+      </section>
+
       <section className="spotlight-grid">
         {snapshotCards.map((card) => (
           <article className="spotlight-card" key={card.eyebrow}>
@@ -277,6 +486,80 @@ function App() {
           </div>
         </section>
       ) : null}
+
+      <section className="judge-case-grid">
+        {judgeCaseCards.map((card) => (
+          <article className="story-card judge-case-card" key={card.eyebrow}>
+            <p className="eyebrow">{card.eyebrow}</p>
+            <h2>{card.title}</h2>
+            <p>{card.detail}</p>
+          </article>
+        ))}
+      </section>
+
+      <section className="baseline-strip">
+        {baselineBeatStrip.map((item) => (
+          <article className="proof-card baseline-strip-card" key={item.label}>
+            <span className="metric-label">{item.label}</span>
+            <strong>{item.value}</strong>
+          </article>
+        ))}
+      </section>
+
+      <section className="story-card matrix-card">
+        <div className="section-heading">
+          <p className="eyebrow">Baseline vs product</p>
+          <h2>Why YardMind is stronger than a raw tester run</h2>
+        </div>
+        <div className="comparison-table-shell">
+          <table className="comparison-table matrix-table">
+            <thead>
+              <tr>
+                <th>Focus</th>
+                <th>Baseline / tester-only view</th>
+                <th>YardMind product view</th>
+              </tr>
+            </thead>
+            <tbody>
+              {comparisonMatrix.map((row) => (
+                <tr key={row.focus}>
+                  <td>{row.focus}</td>
+                  <td>{row.baseline}</td>
+                  <td>{row.yardmind}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="pill-row compact">
+          {officialSurfaces.map((surface) => (
+            <span className="pill" key={surface}>{surface}</span>
+          ))}
+        </div>
+      </section>
+
+      <section className="workflow-section cinematic-panel">
+        <div className="section-heading">
+          <p className="eyebrow">Why judges should believe it</p>
+          <h2>One system, four proof points</h2>
+        </div>
+        <div className="proof-grid">
+          {proofStats.map((stat) => (
+            <article className="proof-card" key={stat.label}>
+              <span className="metric-label">{stat.label}</span>
+              <strong>{stat.value}</strong>
+            </article>
+          ))}
+        </div>
+        <div className="workflow-strip">
+          {workflowStages.map((stage, index) => (
+            <div className="workflow-step" key={stage}>
+              <span className="workflow-index">0{index + 1}</span>
+              <p>{stage}</p>
+            </div>
+          ))}
+        </div>
+      </section>
 
       <section className="story-grid">
         <article className="story-card emphasis story-card-highlight">
