@@ -6,6 +6,7 @@ YardMind is a research-first optimization project for OGC 2026, focused on retri
 
 - judge-friendly React control room for the development solver, search trace, and official constructive comparison
 - screenshot-ready presentation mode at `http://localhost:5173/?view=judge`
+- terminal-style solver walkthrough at `http://localhost:5173/?walkthrough=1` for live demos
 - exported demo artifacts under `artifacts/demo/`, including hackathon-ready PNG captures
 
 ## Goal
@@ -67,6 +68,7 @@ The repository now has two presentation surfaces:
 Current screenshot artifacts:
 - `artifacts/demo/hackathon-frontend.png`
 - `artifacts/demo/hackathon-frontend-judge.png`
+- `artifacts/demo/hackathon-frontend-walkthrough.png`
 
 Recommended local flow:
 
@@ -78,6 +80,7 @@ npm run dev
 
 Use `npm run build` in `web/` to produce a production bundle after refreshing the demo snapshot.
 Use `http://localhost:5173/?view=judge` for the tighter screenshot/export layout that trims the search table and emphasizes the product story above the fold.
+Use `http://localhost:5173/?walkthrough=1` to open the terminal-style solver walkthrough dialog for live explanation of the solve pipeline.
 To regenerate the PNG captures used for hackathon submission materials, run the frontend locally and capture either the default view or the judge view after refreshing the demo snapshot.
 
 ## Current Input Schema

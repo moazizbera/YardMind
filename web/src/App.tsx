@@ -86,6 +86,11 @@ type DemoSnapshot = {
   }
 }
 
+type WalkthroughLine = {
+  kind: 'command' | 'output' | 'note'
+  text: string
+}
+
 const developmentPalette = ['#0b6e4f', '#f08a24', '#8f5ea2', '#2d6cdf', '#c44536', '#3a7d44']
 const officialPalette = ['#0b6e4f', '#f08a24', '#8f5ea2', '#2d6cdf']
 
@@ -100,6 +105,9 @@ function formatCompactSeconds(value: number) {
 function App() {
   const [data, setData] = useState<DemoSnapshot | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [isWalkthroughOpen, setIsWalkthroughOpen] = useState(
+    () => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('walkthrough') === '1',
+  )
   const isJudgeView =
     typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('view') === 'judge'
 
@@ -333,6 +341,37 @@ function App() {
       yardmind: 'Official-sample inspection, validation, delegated/native comparison, and portfolio-search bridge already wired.',
     },
   ]
+  const walkthroughLines: WalkthroughLine[] = [
+    { kind: 'command', text: '$ load instance --source official-sample' },
+    {
+      kind: 'output',
+      text: `Loaded ${officialSummary?.instance ?? data.instance_name} with ${data.block_count} blocks and ${officialSummary?.bays.length ?? 0} official bays.`,
+    },
+    { kind: 'command', text: '$ validate --checker released-utils' },
+    {
+      kind: 'output',
+      text: `Delegated baseline ${officialSummary?.delegated_baseline.feasible ? 'PASS' : 'FAIL'} at stage ${officialSummary?.delegated_baseline.stage ?? 'N/A'}; native ${officialSummary?.native_constructive.feasible ? 'PASS' : 'FAIL'} at stage ${officialSummary?.native_constructive.stage ?? 'N/A'}.`,
+    },
+    { kind: 'command', text: '$ solve --mode constructive --variant delegated' },
+    {
+      kind: 'output',
+      text: `Objective ${officialSummary?.delegated_baseline.objective.toFixed(4) ?? 'N/A'} in ${officialSummary ? formatCompactSeconds(officialSummary.delegated_baseline.runtime_seconds) : 'N/A'}.`,
+    },
+    { kind: 'command', text: '$ solve --mode constructive --variant native' },
+    {
+      kind: 'output',
+      text: `Objective ${officialSummary?.native_constructive.objective.toFixed(4) ?? 'N/A'} in ${officialSummary ? formatCompactSeconds(officialSummary.native_constructive.runtime_seconds) : 'N/A'}; delta ${formatDelta(officialObjectiveDelta)}.`,
+    },
+    { kind: 'command', text: `$ solve --mode search --iterations ${data.search.iterations} --seed ${data.search.seed}` },
+    {
+      kind: 'output',
+      text: `Accepted ${acceptedMoves} moves, feasible rate ${(feasibilityRate * 100).toFixed(0)}%, best incumbent ${data.search_solution.objective_value.toFixed(4)}.`,
+    },
+    {
+      kind: 'note',
+      text: 'YardMind optimizes retrieval-aware layouts, then exposes PASS, objective, runtime, and operator behavior in one judge-facing product view.',
+    },
+  ]
   const displayedHistory = isJudgeView ? data.search.history.slice(0, 8) : data.search.history
 
   return (
@@ -375,6 +414,17 @@ function App() {
               <li>Operator-level trace that shows the optimizer is active, not scripted.</li>
               <li>Official baseline comparison in the same product surface.</li>
             </ul>
+          </div>
+          <div className="hero-stack-card walkthrough-card">
+            <p className="mini-label">Live demonstration</p>
+            <h2>Show how YardMind solves the problem</h2>
+            <p className="focus-caption">
+              Open a terminal-style walkthrough that narrates instance loading, official validation,
+              constructive runs, and the search loop in the same language judges see in the tester.
+            </p>
+            <button className="terminal-launch" onClick={() => setIsWalkthroughOpen(true)} type="button">
+              Open solver walkthrough
+            </button>
           </div>
         </div>
       </section>
@@ -682,7 +732,61 @@ function App() {
           </p>
         ) : null}
       </section>
+
+      <SolverWalkthroughDialog
+        lines={walkthroughLines}
+        onClose={() => setIsWalkthroughOpen(false)}
+        open={isWalkthroughOpen}
+      />
     </main>
+  )
+}
+
+function SolverWalkthroughDialog({
+  open,
+  onClose,
+  lines,
+}: {
+  open: boolean
+  onClose: () => void
+  lines: WalkthroughLine[]
+}) {
+  if (!open) {
+    return null
+  }
+
+  return (
+    <div className="walkthrough-overlay" role="dialog" aria-modal="true" aria-label="Solver walkthrough terminal">
+      <div className="walkthrough-dialog">
+        <div className="walkthrough-header">
+          <div>
+            <p className="eyebrow">Solver walkthrough</p>
+            <h2>How YardMind solves the official problem</h2>
+          </div>
+          <button className="walkthrough-close" onClick={onClose} type="button">
+            Close
+          </button>
+        </div>
+        <div className="terminal-window">
+          <div className="terminal-chrome">
+            <span />
+            <span />
+            <span />
+            <p>yardmind@control-room: official-run.demo</p>
+          </div>
+          <div className="terminal-body">
+            {lines.map((line, index) => (
+              <div className={`terminal-line ${line.kind}`} key={`${line.kind}-${index}`}>
+                <span className="terminal-prefix">
+                  {line.kind === 'command' ? '>' : line.kind === 'note' ? '#' : ''}
+                </span>
+                <span>{line.text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
 
