@@ -69,6 +69,7 @@ The challenge is not only to fit blocks into a yard. It is to fit them in a way 
 
 - Repository: https://github.com/moazizbera/YardMind
 - README: `README.md`
+- Demo script: `docs/presentation/demo-script.md`
 - Judge screenshot: `artifacts/demo/hackathon-frontend-judge.png`
 - Full demo screenshot: `artifacts/demo/hackathon-frontend.png`
 - Static demo artifact: `artifacts/demo/index.html`
