@@ -2,6 +2,12 @@
 
 YardMind is a research-first optimization project for OGC 2026, focused on retrieval-aware shipyard block packing and scheduling.
 
+## Demo Highlights
+
+- judge-friendly React control room for the development solver, search trace, and official constructive comparison
+- screenshot-ready presentation mode at `http://localhost:5173/?view=judge`
+- exported demo artifacts under `artifacts/demo/`, including hackathon-ready PNG captures
+
 ## Goal
 
 Build an anytime hybrid optimizer that:
@@ -58,6 +64,10 @@ The repository now has two presentation surfaces:
 - the static artifact in `artifacts/demo/index.html`
 - the React app in `web/`, which consumes `web/public/demo-data.json`
 
+Current screenshot artifacts:
+- `artifacts/demo/hackathon-frontend.png`
+- `artifacts/demo/hackathon-frontend-judge.png`
+
 Recommended local flow:
 
 ```bash
@@ -67,6 +77,8 @@ npm run dev
 ```
 
 Use `npm run build` in `web/` to produce a production bundle after refreshing the demo snapshot.
+Use `http://localhost:5173/?view=judge` for the tighter screenshot/export layout that trims the search table and emphasizes the product story above the fold.
+To regenerate the PNG captures used for hackathon submission materials, run the frontend locally and capture either the default view or the judge view after refreshing the demo snapshot.
 
 ## Current Input Schema
 
