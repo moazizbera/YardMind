@@ -4,6 +4,8 @@
 
 Use this note when preparing a competition submission package for OGC 2026. The goal is to reduce avoidable submission mistakes and keep the open-source release in a presentable state.
 
+For ready-to-paste project copy, demo links, and judge-facing asset references, see `docs/handoff/hackathon-submission-kit.md`.
+
 ## Pre-Submission Checks
 
 - run the current validated test suite from a clean shell
