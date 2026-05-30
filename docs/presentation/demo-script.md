@@ -4,6 +4,8 @@
 
 Use this script when presenting YardMind live to judges. It is designed to match the current frontend, screenshots, and submission kit so the spoken story stays consistent with the repository.
 
+For a fast operational runbook, see `docs/presentation/demo-checklist.md`.
+
 ## Open Before Presenting
 
 - React app: `http://localhost:5173`
