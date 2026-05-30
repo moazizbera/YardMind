@@ -105,9 +105,9 @@ function formatCompactSeconds(value: number) {
 function App() {
   const [data, setData] = useState<DemoSnapshot | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [isWalkthroughOpen, setIsWalkthroughOpen] = useState(
-    () => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('walkthrough') === '1',
-  )
+  const walkthroughRequested =
+    typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('walkthrough') === '1'
+  const [isWalkthroughOpen, setIsWalkthroughOpen] = useState(walkthroughRequested)
   const isJudgeView =
     typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('view') === 'judge'
 
@@ -529,6 +529,11 @@ function App() {
             <p className="eyebrow">Judge screenshot mode</p>
             <h2>One screen, three claims</h2>
           </div>
+          <div className="judge-banner-actions">
+            <button className="terminal-launch judge-cta" onClick={() => setIsWalkthroughOpen(true)} type="button">
+              Play live solve demo
+            </button>
+          </div>
           <div className="pill-row compact">
             <span className="pill">Retrieval-aware layouts</span>
             <span className="pill">Search trace evidence</span>
@@ -734,6 +739,7 @@ function App() {
       </section>
 
       <SolverWalkthroughDialog
+        autoPlay={walkthroughRequested || isJudgeView}
         lines={walkthroughLines}
         onClose={() => setIsWalkthroughOpen(false)}
         open={isWalkthroughOpen}
@@ -746,13 +752,51 @@ function SolverWalkthroughDialog({
   open,
   onClose,
   lines,
+  autoPlay,
 }: {
   open: boolean
   onClose: () => void
   lines: WalkthroughLine[]
+  autoPlay: boolean
 }) {
+  const [visibleCount, setVisibleCount] = useState(autoPlay ? 0 : lines.length)
+  const [isPlaying, setIsPlaying] = useState(autoPlay)
+
+  useEffect(() => {
+    if (!open) {
+      return
+    }
+    setVisibleCount(autoPlay ? 0 : lines.length)
+    setIsPlaying(autoPlay)
+  }, [autoPlay, lines.length, open])
+
+  useEffect(() => {
+    if (!open || !isPlaying) {
+      return
+    }
+    if (visibleCount >= lines.length) {
+      setIsPlaying(false)
+      return
+    }
+
+    const current = lines[visibleCount]
+    const delay = current.kind === 'command' ? 500 : current.kind === 'note' ? 900 : 700
+    const timer = window.setTimeout(() => {
+      setVisibleCount((count) => count + 1)
+    }, delay)
+
+    return () => window.clearTimeout(timer)
+  }, [isPlaying, lines, open, visibleCount])
+
   if (!open) {
     return null
+  }
+
+  const visibleLines = lines.slice(0, visibleCount)
+
+  function handlePlayDemo() {
+    setVisibleCount(0)
+    setIsPlaying(true)
   }
 
   return (
@@ -763,9 +807,14 @@ function SolverWalkthroughDialog({
             <p className="eyebrow">Solver walkthrough</p>
             <h2>How YardMind solves the official problem</h2>
           </div>
-          <button className="walkthrough-close" onClick={onClose} type="button">
-            Close
-          </button>
+          <div className="walkthrough-actions">
+            <button className="terminal-launch" onClick={handlePlayDemo} type="button">
+              {visibleCount === 0 || isPlaying ? 'Playing demo...' : 'Play demo'}
+            </button>
+            <button className="walkthrough-close" onClick={onClose} type="button">
+              Close
+            </button>
+          </div>
         </div>
         <div className="terminal-window">
           <div className="terminal-chrome">
@@ -775,7 +824,7 @@ function SolverWalkthroughDialog({
             <p>yardmind@control-room: official-run.demo</p>
           </div>
           <div className="terminal-body">
-            {lines.map((line, index) => (
+            {visibleLines.map((line, index) => (
               <div className={`terminal-line ${line.kind}`} key={`${line.kind}-${index}`}>
                 <span className="terminal-prefix">
                   {line.kind === 'command' ? '>' : line.kind === 'note' ? '#' : ''}
@@ -783,6 +832,7 @@ function SolverWalkthroughDialog({
                 <span>{line.text}</span>
               </div>
             ))}
+            {isPlaying && visibleCount < lines.length ? <div className="terminal-cursor" /> : null}
           </div>
         </div>
       </div>
