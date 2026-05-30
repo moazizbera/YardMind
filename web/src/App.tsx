@@ -89,9 +89,19 @@ type DemoSnapshot = {
 const developmentPalette = ['#0b6e4f', '#f08a24', '#8f5ea2', '#2d6cdf', '#c44536', '#3a7d44']
 const officialPalette = ['#0b6e4f', '#f08a24', '#8f5ea2', '#2d6cdf']
 
+function formatDelta(value: number) {
+  return `${value >= 0 ? '+' : ''}${value.toFixed(4)}`
+}
+
+function formatCompactSeconds(value: number) {
+  return `${value.toFixed(value < 0.01 ? 4 : 3)}s`
+}
+
 function App() {
   const [data, setData] = useState<DemoSnapshot | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const isJudgeView =
+    typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('view') === 'judge'
 
   useEffect(() => {
     let cancelled = false
@@ -155,26 +165,83 @@ function App() {
     ? officialSummary.delegated_baseline.runtime_seconds /
       Math.max(officialSummary.native_constructive.runtime_seconds, 1e-9)
     : 0
+  const acceptedMoves = data.search.history.filter((record) => record.accepted).length
+  const feasibleMoves = data.search.history.filter((record) => record.candidate_feasible).length
+  const acceptanceRate = data.search.history.length > 0 ? acceptedMoves / data.search.history.length : 0
+  const feasibilityRate = data.search.history.length > 0 ? feasibleMoves / data.search.history.length : 0
+  const bestTraceObjective = data.search.history.reduce(
+    (best, record) => Math.min(best, record.best_objective),
+    data.search_solution.objective_value,
+  )
+  const launchMetrics = [
+    { label: 'Search uplift', value: formatDelta(objectiveDelta), tone: objectiveDelta <= 0 ? 'good' : 'warn' },
+    { label: 'Accepted moves', value: `${acceptedMoves}/${data.search.history.length}`, tone: 'neutral' },
+    { label: 'Feasible candidates', value: `${(feasibilityRate * 100).toFixed(0)}%`, tone: 'neutral' },
+    {
+      label: 'Official runtime ratio',
+      value: officialSummary ? `${runtimeRatio.toFixed(2)}x` : 'N/A',
+      tone: runtimeRatio >= 1 ? 'good' : 'neutral',
+    },
+  ]
+  const snapshotCards = [
+    {
+      eyebrow: 'Search loop',
+      title: 'Incumbent kept stable while the destroy-repair loop explores harder placements.',
+      detail: `Acceptance ${(acceptanceRate * 100).toFixed(0)}% across ${data.search.iterations} iterations with best trace objective ${bestTraceObjective.toFixed(4)}.`,
+    },
+    {
+      eyebrow: 'Official path',
+      title: officialSummary
+        ? 'Native constructive is benchmarked directly against the delegated official baseline.'
+        : 'Official comparison snapshot is not available in the current demo export.',
+      detail: officialSummary
+        ? `Delegated ${formatCompactSeconds(officialSummary.delegated_baseline.runtime_seconds)} vs native ${formatCompactSeconds(officialSummary.native_constructive.runtime_seconds)} with objective delta ${formatDelta(officialObjectiveDelta)}.`
+        : data.official.error ?? 'Regenerate the demo snapshot to include official comparison data.',
+    },
+  ]
+  const displayedHistory = isJudgeView ? data.search.history.slice(0, 8) : data.search.history
 
   return (
-    <main className="app-shell">
-      <section className="hero-panel">
+    <main className={`app-shell${isJudgeView ? ' judge-view' : ''}`}>
+      <section className="hero-panel cinematic-panel">
+        <div className="hero-orbit hero-orbit-left" />
+        <div className="hero-orbit hero-orbit-right" />
         <div className="hero-copy">
-          <p className="eyebrow">YardMind Control Room</p>
-          <h1>Show the optimizer, not just the logs.</h1>
+          <div className="eyebrow-row">
+            <p className="eyebrow">YardMind Control Room</p>
+            <span className="status-pill">Hackathon demo surface</span>
+          </div>
+          <h1>Plan the yard like a control tower, not a terminal log.</h1>
           <p className="lead">
-            A React interface over the live YardMind demo snapshot: development yard layouts,
-            local-search trace, and official delegated-versus-native constructive behavior in one
-            judge-friendly surface.
+            YardMind turns retrieval-aware block planning into a visual product story: layout
+            quality, search behavior, and official contest performance rendered in one cinematic
+            interface that is easy for judges to scan in seconds.
           </p>
+          <div className="hero-metric-row">
+            {launchMetrics.map((metric) => (
+              <article className={`hero-stat hero-stat-${metric.tone}`} key={metric.label}>
+                <span className="hero-stat-label">{metric.label}</span>
+                <strong>{metric.value}</strong>
+              </article>
+            ))}
+          </div>
         </div>
         <div className="hero-stack">
-          <div className="hero-badge">Instance: {data.instance_name}</div>
-          <div className="hero-badge">Blocks: {data.block_count}</div>
-          <div className="hero-badge">Search delta: {objectiveDelta >= 0 ? '+' : ''}{objectiveDelta.toFixed(4)}</div>
-          {officialSummary ? (
-            <div className="hero-badge">Official runtime ratio: {runtimeRatio.toFixed(2)}x</div>
-          ) : null}
+          <div className="hero-stack-card focus-card">
+            <p className="mini-label">Live snapshot</p>
+            <div className="focus-value">{data.instance_name}</div>
+            <p className="focus-caption">
+              {data.block_count} blocks across a {data.yard.width}x{data.yard.height} development yard.
+            </p>
+          </div>
+          <div className="hero-stack-card">
+            <p className="mini-label">Judge narrative</p>
+            <ul className="signal-list">
+              <li>Visual evidence of constructive versus improved layouts.</li>
+              <li>Operator-level trace that shows the optimizer is active, not scripted.</li>
+              <li>Official baseline comparison in the same product surface.</li>
+            </ul>
+          </div>
         </div>
       </section>
 
@@ -183,12 +250,36 @@ function App() {
         <MetricCard label="Search objective" value={data.search_solution.objective_value.toFixed(4)} />
         <MetricCard label="Search seed" value={`${data.search.seed}`} />
         <MetricCard label="Iterations" value={`${data.search.iterations}`} />
-        <MetricCard label="Official delta" value={`${officialObjectiveDelta >= 0 ? '+' : ''}${officialObjectiveDelta.toFixed(4)}`} />
+        <MetricCard label="Official delta" value={formatDelta(officialObjectiveDelta)} />
         <MetricCard label="Official sample" value={officialSummary?.instance ?? 'Unavailable'} />
       </section>
 
+      <section className="spotlight-grid">
+        {snapshotCards.map((card) => (
+          <article className="spotlight-card" key={card.eyebrow}>
+            <p className="eyebrow">{card.eyebrow}</p>
+            <h2>{card.title}</h2>
+            <p>{card.detail}</p>
+          </article>
+        ))}
+      </section>
+
+      {isJudgeView ? (
+        <section className="judge-banner cinematic-panel">
+          <div>
+            <p className="eyebrow">Judge screenshot mode</p>
+            <h2>One screen, three claims</h2>
+          </div>
+          <div className="pill-row compact">
+            <span className="pill">Retrieval-aware layouts</span>
+            <span className="pill">Search trace evidence</span>
+            <span className="pill">Official comparison included</span>
+          </div>
+        </section>
+      ) : null}
+
       <section className="story-grid">
-        <article className="story-card emphasis">
+        <article className="story-card emphasis story-card-highlight">
           <h2>Why this matters</h2>
           <p>
             YardMind’s pitch is not another solver script. It is a retrieval-aware planning system
@@ -203,6 +294,23 @@ function App() {
             <li>Official delegated-vs-native comparison is visible without reading raw JSON.</li>
             <li>The same Python pipeline regenerates both browser data and CLI artifacts.</li>
           </ul>
+        </article>
+        <article className="story-card data-card">
+          <h2>Evidence in one glance</h2>
+          <div className="data-points">
+            <div>
+              <span className="data-point-label">Accepted moves</span>
+              <strong>{acceptedMoves}</strong>
+            </div>
+            <div>
+              <span className="data-point-label">Feasible share</span>
+              <strong>{(feasibilityRate * 100).toFixed(0)}%</strong>
+            </div>
+            <div>
+              <span className="data-point-label">Runtime story</span>
+              <strong>{officialSummary ? `${runtimeRatio.toFixed(2)}x` : 'N/A'}</strong>
+            </div>
+          </div>
         </article>
       </section>
 
@@ -229,9 +337,9 @@ function App() {
         {officialSummary ? (
           <>
             <div className="pill-row">
-              <span className="pill">Objective delta {officialObjectiveDelta >= 0 ? '+' : ''}{officialObjectiveDelta.toFixed(4)}</span>
-              <span className="pill">Delegated {officialSummary.delegated_baseline.runtime_seconds.toFixed(6)}s</span>
-              <span className="pill">Native {officialSummary.native_constructive.runtime_seconds.toFixed(6)}s</span>
+              <span className="pill">Objective delta {formatDelta(officialObjectiveDelta)}</span>
+              <span className="pill">Delegated {formatCompactSeconds(officialSummary.delegated_baseline.runtime_seconds)}</span>
+              <span className="pill">Native {formatCompactSeconds(officialSummary.native_constructive.runtime_seconds)}</span>
               <span className="pill">Runtime ratio {runtimeRatio.toFixed(2)}x</span>
             </div>
             <div className="official-grid">
@@ -271,7 +379,7 @@ function App() {
               </tr>
             </thead>
             <tbody>
-              {data.search.history.map((record) => (
+              {displayedHistory.map((record) => (
                 <tr key={record.iteration}>
                   <td>{record.iteration}</td>
                   <td>{record.destroy_operator}</td>
@@ -285,6 +393,11 @@ function App() {
             </tbody>
           </table>
         </div>
+        {isJudgeView && data.search.history.length > displayedHistory.length ? (
+          <p className="trace-note">
+            Showing the first {displayedHistory.length} search iterations for a tighter screenshot composition.
+          </p>
+        ) : null}
       </section>
     </main>
   )
@@ -312,7 +425,13 @@ function LayoutPanel({
 }) {
   return (
     <article className="story-card layout-panel">
-      <h2>{title}</h2>
+      <div className="panel-heading-row">
+        <div>
+          <p className="eyebrow">Development view</p>
+          <h2>{title}</h2>
+        </div>
+        <span className="status-pill subtle">{solution.placements.length} placements</span>
+      </div>
       <p>{description}</p>
       <DevelopmentYard solution={solution} yard={yard} />
       <div className="pill-row compact">
@@ -371,7 +490,15 @@ function OfficialVariantPanel({
 }) {
   return (
     <article className="story-card official-panel">
-      <h3>{label}</h3>
+      <div className="panel-heading-row">
+        <div>
+          <p className="eyebrow">Official constructive</p>
+          <h3>{label}</h3>
+        </div>
+        <span className={`status-pill subtle ${variant.feasible ? 'good' : 'bad'}`}>
+          {variant.feasible ? 'Feasible' : 'Infeasible'}
+        </span>
+      </div>
       <div className="pill-row compact">
         <span className="pill">Objective {variant.objective.toFixed(4)}</span>
         <span className="pill">Assignments {variant.assignment_count ?? 0}</span>
