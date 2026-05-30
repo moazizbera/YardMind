@@ -1,6 +1,0 @@
-name,attempts,feasible_candidates,accepted_candidates,improved_candidates
-congestion_cluster,18,10,1,1
-congestion_cluster_k3,52,42,8,8
-global_restart,21,20,0,0
-high_risk_cluster,12,12,0,0
-high_risk_cluster_k3,17,6,1,1

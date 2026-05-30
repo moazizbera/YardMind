@@ -13,3 +13,12 @@ Thumbs.db
 .vscode/
 build/
 dist/
+
+# Generated project outputs
+artifacts/benchmark-sample.json
+artifacts/curated-improvement-benchmark.json
+artifacts/demo/
+artifacts/official/comparison/
+artifacts/official/official-sample-solution.json
+artifacts/report/
+web/public/demo-data.json
