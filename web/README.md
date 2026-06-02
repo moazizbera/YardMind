@@ -70,3 +70,14 @@ Use these settings when creating the Pages project:
 - Node version: `22`
 
 The app currently uses static data from `public/demo-data.json`, so no runtime secrets are required for a basic deployment.
+
+## Deploy to Cloudflare Workers Static Assets
+
+If you deploy with `wrangler deploy` instead of Cloudflare Pages, do not publish the raw `web` folder.
+
+This repository includes a root `wrangler.jsonc` configured to:
+
+- build the frontend with `npm --prefix web ci && npm --prefix web run build`
+- publish the built output from `web/dist`
+
+That avoids the broken production case where Cloudflare serves `web/index.html` directly and the browser receives `/src/main.tsx` instead of compiled assets.

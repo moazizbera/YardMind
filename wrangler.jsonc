@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "yardmind",
+  "compatibility_date": "2026-06-02",
+  "observability": {
+    "enabled": true
+  },
+  "assets": {
+    "directory": "web/dist"
+  },
+  "build": {
+    "command": "npm --prefix web ci && npm --prefix web run build"
+  }
+}
