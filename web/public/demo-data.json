@@ -1,0 +1,437 @@
+{
+  "instance_name": "sample-instance",
+  "yard": {
+    "width": 12,
+    "height": 10
+  },
+  "block_count": 3,
+  "search": {
+    "iterations": 4,
+    "seed": 3,
+    "delta": 0.0,
+    "history": [
+      {
+        "iteration": 1,
+        "destroy_operator": "congestion_cluster",
+        "repair_operator": "best_of_top",
+        "candidate_feasible": true,
+        "candidate_objective": -5.385957400087834,
+        "best_objective": -5.385957400087834,
+        "accepted": false
+      },
+      {
+        "iteration": 2,
+        "destroy_operator": "congestion_cluster",
+        "repair_operator": "best_of_top",
+        "candidate_feasible": true,
+        "candidate_objective": -5.385957400087834,
+        "best_objective": -5.385957400087834,
+        "accepted": false
+      },
+      {
+        "iteration": 3,
+        "destroy_operator": "congestion_cluster_k3",
+        "repair_operator": "sampled_greedy",
+        "candidate_feasible": true,
+        "candidate_objective": -5.459127714390872,
+        "best_objective": -5.385957400087834,
+        "accepted": false
+      },
+      {
+        "iteration": 4,
+        "destroy_operator": "high_risk_cluster_k3",
+        "repair_operator": "sampled_greedy",
+        "candidate_feasible": true,
+        "candidate_objective": -5.487973868237026,
+        "best_objective": -5.385957400087834,
+        "accepted": false
+      }
+    ]
+  },
+  "constructive": {
+    "objective_value": -5.385957400087834,
+    "objective_breakdown": {
+      "area_utilization": 0.275,
+      "lateness_penalty": 0.0,
+      "retrieval_risk_penalty": 2.090909090909091,
+      "congestion_penalty": 3.570048309178744
+    },
+    "placements": [
+      {
+        "block_id": "B1",
+        "x": 0,
+        "y": 0,
+        "start_time": 0,
+        "end_time": 5,
+        "rotation": 0,
+        "width": 4,
+        "height": 3
+      },
+      {
+        "block_id": "B2",
+        "x": 9,
+        "y": 0,
+        "start_time": 1,
+        "end_time": 6,
+        "rotation": 0,
+        "width": 3,
+        "height": 2
+      },
+      {
+        "block_id": "B3",
+        "x": 4,
+        "y": 7,
+        "start_time": 4,
+        "end_time": 9,
+        "rotation": 0,
+        "width": 5,
+        "height": 3
+      }
+    ]
+  },
+  "search_solution": {
+    "objective_value": -5.385957400087834,
+    "objective_breakdown": {
+      "area_utilization": 0.275,
+      "lateness_penalty": 0.0,
+      "retrieval_risk_penalty": 2.090909090909091,
+      "congestion_penalty": 3.570048309178744
+    },
+    "placements": [
+      {
+        "block_id": "B1",
+        "x": 0,
+        "y": 0,
+        "start_time": 0,
+        "end_time": 5,
+        "rotation": 0,
+        "width": 4,
+        "height": 3
+      },
+      {
+        "block_id": "B2",
+        "x": 9,
+        "y": 0,
+        "start_time": 1,
+        "end_time": 6,
+        "rotation": 0,
+        "width": 3,
+        "height": 2
+      },
+      {
+        "block_id": "B3",
+        "x": 4,
+        "y": 7,
+        "start_time": 4,
+        "end_time": 9,
+        "rotation": 0,
+        "width": 5,
+        "height": 3
+      }
+    ]
+  },
+  "allocation_trace": [
+    {
+      "block_id": "B1",
+      "from_x": 0,
+      "from_y": 0,
+      "to_x": 0,
+      "to_y": 0,
+      "moved": false,
+      "access_delta": 0,
+      "conflict_delta": 0,
+      "core_delta": 0.0,
+      "signal_score": 0.0,
+      "reason": "kept stable because the constructive placement already aligned with the target structure"
+    },
+    {
+      "block_id": "B2",
+      "from_x": 9,
+      "from_y": 0,
+      "to_x": 9,
+      "to_y": 0,
+      "moved": false,
+      "access_delta": 0,
+      "conflict_delta": 0,
+      "core_delta": 0.0,
+      "signal_score": 0.0,
+      "reason": "kept stable because the constructive placement already aligned with the target structure"
+    },
+    {
+      "block_id": "B3",
+      "from_x": 4,
+      "from_y": 7,
+      "to_x": 4,
+      "to_y": 7,
+      "moved": false,
+      "access_delta": 0,
+      "conflict_delta": 0,
+      "core_delta": 0.0,
+      "signal_score": 0.0,
+      "reason": "kept stable because the constructive placement already aligned with the target structure"
+    }
+  ],
+  "official": {
+    "summary": {
+      "instance": "official-search-quality-instance",
+      "bays": [
+        {
+          "bay_id": 0,
+          "width": 6,
+          "height": 5
+        },
+        {
+          "bay_id": 1,
+          "width": 5,
+          "height": 6
+        }
+      ],
+      "delegated_baseline": {
+        "runtime_seconds": 0.2353243000106886,
+        "feasible": true,
+        "stage": 5,
+        "objective": 72.0,
+        "obj1": 3.0,
+        "obj2": 14.0,
+        "obj3": 0.0,
+        "violations": [],
+        "assignment_count": 4,
+        "assignments": [
+          {
+            "block_id": 0,
+            "bay_id": 1,
+            "x": 0,
+            "y": 0,
+            "orient_idx": 0,
+            "entry_time": 2,
+            "width": 4,
+            "height": 2,
+            "exit_time": 3
+          },
+          {
+            "block_id": 1,
+            "bay_id": 0,
+            "x": 0,
+            "y": 0,
+            "orient_idx": 0,
+            "entry_time": 7,
+            "width": 6,
+            "height": 5,
+            "exit_time": 9
+          },
+          {
+            "block_id": 2,
+            "bay_id": 0,
+            "x": 0,
+            "y": 0,
+            "orient_idx": 0,
+            "entry_time": 5,
+            "width": 6,
+            "height": 3,
+            "exit_time": 7
+          },
+          {
+            "block_id": 3,
+            "bay_id": 0,
+            "x": 0,
+            "y": 0,
+            "orient_idx": 0,
+            "entry_time": 2,
+            "width": 4,
+            "height": 5,
+            "exit_time": 5
+          }
+        ]
+      },
+      "native_constructive": {
+        "runtime_seconds": 0.001455499994335696,
+        "feasible": true,
+        "stage": 5,
+        "objective": 72.0,
+        "obj1": 3.0,
+        "obj2": 14.0,
+        "obj3": 0.0,
+        "violations": [],
+        "assignment_count": 4,
+        "assignments": [
+          {
+            "block_id": 0,
+            "bay_id": 1,
+            "x": 0,
+            "y": 0,
+            "orient_idx": 0,
+            "entry_time": 2,
+            "width": 4,
+            "height": 2,
+            "exit_time": 3
+          },
+          {
+            "block_id": 1,
+            "bay_id": 0,
+            "x": 0,
+            "y": 0,
+            "orient_idx": 0,
+            "entry_time": 7,
+            "width": 6,
+            "height": 5,
+            "exit_time": 9
+          },
+          {
+            "block_id": 2,
+            "bay_id": 0,
+            "x": 0,
+            "y": 0,
+            "orient_idx": 0,
+            "entry_time": 5,
+            "width": 6,
+            "height": 3,
+            "exit_time": 7
+          },
+          {
+            "block_id": 3,
+            "bay_id": 0,
+            "x": 0,
+            "y": 0,
+            "orient_idx": 0,
+            "entry_time": 2,
+            "width": 4,
+            "height": 5,
+            "exit_time": 5
+          }
+        ]
+      },
+      "official_search": {
+        "runtime_seconds": 0.07780480000656098,
+        "feasible": true,
+        "stage": 5,
+        "objective": 23.0,
+        "obj1": 1.0,
+        "obj2": 2.0,
+        "obj3": 7.0,
+        "violations": [],
+        "assignment_count": 4,
+        "assignments": [
+          {
+            "block_id": 0,
+            "bay_id": 0,
+            "x": 0,
+            "y": 0,
+            "orient_idx": 0,
+            "entry_time": 2,
+            "width": 4,
+            "height": 2,
+            "exit_time": 3
+          },
+          {
+            "block_id": 1,
+            "bay_id": 0,
+            "x": 0,
+            "y": 0,
+            "orient_idx": 0,
+            "entry_time": 5,
+            "width": 6,
+            "height": 5,
+            "exit_time": 7
+          },
+          {
+            "block_id": 2,
+            "bay_id": 0,
+            "x": 0,
+            "y": 0,
+            "orient_idx": 0,
+            "entry_time": 3,
+            "width": 6,
+            "height": 3,
+            "exit_time": 5
+          },
+          {
+            "block_id": 3,
+            "bay_id": 1,
+            "x": 0,
+            "y": 0,
+            "orient_idx": 0,
+            "entry_time": 2,
+            "width": 4,
+            "height": 5,
+            "exit_time": 5
+          }
+        ]
+      }
+    },
+    "error": null
+  },
+  "report_evidence": {
+    "development": {
+      "runs": 6,
+      "constructive_mean": -14.755427905427903,
+      "search_mean": -14.438531838531837,
+      "search_best": -14.424431124431123,
+      "improved_runs": 6
+    },
+    "official": {
+      "public_sample": {
+        "instance": "official-sample-instance",
+        "runs": 6,
+        "delegated_feasible_runs": 6,
+        "native_feasible_runs": 6,
+        "search_feasible_runs": 6,
+        "delegated_objective_mean": 0.0,
+        "native_objective_mean": 0.0,
+        "search_objective_mean": 0.0,
+        "objective_delta_mean": 0.0,
+        "search_vs_delegated_delta_mean": 0.0,
+        "search_vs_native_delta_mean": 0.0,
+        "delegated_runtime_mean": 0.0451909666667234,
+        "native_runtime_mean": 0.0006560166666910542,
+        "search_runtime_mean": 0.013230133333308913,
+        "native_better_or_equal_runs": 6,
+        "native_faster_runs": 6,
+        "search_better_or_equal_than_delegated_runs": 6,
+        "search_better_or_equal_than_native_runs": 6,
+        "search_faster_than_delegated_runs": 1
+      },
+      "proof_case": {
+        "instance": "official-search-proof-instance",
+        "runs": 6,
+        "delegated_feasible_runs": 6,
+        "native_feasible_runs": 0,
+        "search_feasible_runs": 6,
+        "delegated_objective_mean": 16.805555555555557,
+        "native_objective_mean": null,
+        "search_objective_mean": 9.79166666666667,
+        "objective_delta_mean": null,
+        "search_vs_delegated_delta_mean": -7.013888888888888,
+        "search_vs_native_delta_mean": null,
+        "delegated_runtime_mean": 0.006342666666758608,
+        "native_runtime_mean": 0.0036354000000452893,
+        "search_runtime_mean": 1.0077679499999779,
+        "native_better_or_equal_runs": 0,
+        "native_faster_runs": 6,
+        "search_better_or_equal_than_delegated_runs": 6,
+        "search_better_or_equal_than_native_runs": 0,
+        "search_faster_than_delegated_runs": 0
+      },
+      "quality_case": {
+        "instance": "official-search-quality-instance",
+        "runs": 6,
+        "delegated_feasible_runs": 6,
+        "native_feasible_runs": 6,
+        "search_feasible_runs": 6,
+        "delegated_objective_mean": 72.0,
+        "native_objective_mean": 72.0,
+        "search_objective_mean": 23.0,
+        "objective_delta_mean": 0.0,
+        "search_vs_delegated_delta_mean": -49.0,
+        "search_vs_native_delta_mean": -49.0,
+        "delegated_runtime_mean": 0.003877316666603292,
+        "native_runtime_mean": 0.001802033333357637,
+        "search_runtime_mean": 0.20309888333338222,
+        "native_better_or_equal_runs": 6,
+        "native_faster_runs": 5,
+        "search_better_or_equal_than_delegated_runs": 6,
+        "search_better_or_equal_than_native_runs": 6,
+        "search_faster_than_delegated_runs": 0
+      }
+    }
+  }
+}

@@ -23,7 +23,6 @@ artifacts/compare-check/
 artifacts/official/comparison/
 artifacts/official/official-sample-solution.json
 artifacts/report/
-web/public/demo-data.json
 .vite/
 Other/
 docs/Others/
