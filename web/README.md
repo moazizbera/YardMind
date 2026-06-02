@@ -56,3 +56,17 @@ npm run build
 ```
 
 If the app reports missing demo data, regenerate the snapshot from the repo root. `src/yardmind/demo.py` now syncs the latest JSON into `web/public/demo-data.json` automatically. The default snapshot favors the stronger `realistic-improvement-instance` development yard and the `official-search-quality-instance` official comparison.
+
+## Deploy to Cloudflare Pages
+
+This frontend is ready to deploy as a static Cloudflare Pages project.
+
+Use these settings when creating the Pages project:
+
+- Repository: the main YardMind GitHub repository
+- Root directory: `web`
+- Build command: `npm run build`
+- Build output directory: `dist`
+- Node version: `22`
+
+The app currently uses static data from `public/demo-data.json`, so no runtime secrets are required for a basic deployment.
