@@ -290,7 +290,13 @@ function getOperationsAtTime(assignments: OfficialAssignment[], time: number): O
     .filter((assignment) => assignment.entry_time === time)
     .map((assignment) => ({ kind: 'ENTRY' as const, block_id: assignment.block_id, bay_id: assignment.bay_id }))
 
-  return [...exits, ...entries].sort((left, right) => left.block_id - right.block_id)
+  return [...exits, ...entries].sort((left, right) => {
+    if (left.kind !== right.kind) {
+      return left.kind === 'EXIT' ? -1 : 1
+    }
+
+    return left.block_id - right.block_id
+  })
 }
 
 function getTimelineBounds(assignments: OfficialAssignment[]): OfficialPlaybackBounds {
@@ -968,7 +974,7 @@ function App() {
               <span className="surface-label">Deep analysis</span>
               <h2>How YardMind solves the OGC 2026 shipyard puzzle.</h2>
               <p className="surface-copy">
-                The OGC 2026 problem couples bay assignment, geometry, orientation, and timing in one decision process. In this snapshot, YardMind starts from a feasible {data.block_count}-block yard, changes {movedBlocks} placements under local search, and validates the final result with the released official checker.
+                The OGC 2026 problem couples bay assignment, geometry, orientation, and timing in one decision process. This live snapshot keeps the bay-time story readable, while the released official checker remains the source of truth for the full geometric and operational constraints behind each placement.
               </p>
             </div>
             <div className="headline-strip muted-strip analysis-kpi-strip">
@@ -1001,9 +1007,9 @@ function App() {
                 <article className="analysis-decision-card">
                   <span className="analysis-card-index">02</span>
                   <span className="surface-label">Placement and orientation</span>
-                  <h3>Place shapes so the yard stays readable.</h3>
+                  <h3>Validate full geometry, then show the readable abstraction.</h3>
                   <p className="surface-copy compact">
-                    The constructive phase builds a collision-free footprint, then search reopens only crowded neighborhoods. In this snapshot, {movedBlocks === 0 ? 'the constructive arrangement already aligned with the target structure.' : `${movedBlocks} blocks were repositioned to improve access or reduce conflict pressure.`}
+                    The constructive phase builds a collision-free footprint, then search reopens only crowded neighborhoods. The official problem is polygon-and-layer based with explicit orientation choices; the live replay compresses those validated placements into readable bay cards so the movement story stays legible. In this snapshot, {movedBlocks === 0 ? 'the constructive arrangement already aligned with the target structure.' : `${movedBlocks} blocks were repositioned to improve access or reduce conflict pressure.`}
                   </p>
                 </article>
                 <article className="analysis-decision-card">
@@ -1057,6 +1063,15 @@ function App() {
                     </div>
                     <p className="surface-copy compact">
                       The final answer is validated by the released evaluator. In this snapshot, {officialSummary?.instance ?? 'the official view'} is {proofVariant ? `${proofVariant.feasible ? 'PASS' : 'FAIL'} at stage ${proofVariant.stage}` : 'pending'}, with runtime {proofVariant ? formatCompactSeconds(proofVariant.runtime_seconds) : 'n/a'} and delta {officialSummary ? formatDelta(officialObjectiveDelta) : 'n/a'} vs delegated.
+                    </p>
+                  </article>
+                  <article className="analysis-stage-card">
+                    <div className="analysis-stage-topline">
+                      <span className="analysis-stage-index">Stage 4</span>
+                      <span className="surface-label">Presentation abstraction</span>
+                    </div>
+                    <p className="surface-copy compact">
+                      The frontend intentionally renders the official result as simplified bay rectangles with ENTRY and EXIT timing. That abstraction is for explanation only; orientation, layer overlap, bay containment, and crane-feasibility remain enforced by the official evaluator rather than approximated in the replay surface.
                     </p>
                   </article>
                 </div>

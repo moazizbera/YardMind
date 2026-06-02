@@ -7,8 +7,5 @@
   },
   "assets": {
     "directory": "web/dist"
-  },
-  "build": {
-    "command": "npm --prefix web ci && npm --prefix web run build"
   }
 }

@@ -77,7 +77,16 @@ If you deploy with `wrangler deploy` instead of Cloudflare Pages, do not publish
 
 This repository includes a root `wrangler.jsonc` configured to:
 
-- build the frontend with `npm --prefix web ci && npm --prefix web run build`
 - publish the built output from `web/dist`
+
+Build the frontend locally before running Wrangler:
+
+```bash
+cd web
+npm run build
+
+cd ..
+npx wrangler deploy
+```
 
 That avoids the broken production case where Cloudflare serves `web/index.html` directly and the browser receives `/src/main.tsx` instead of compiled assets.
