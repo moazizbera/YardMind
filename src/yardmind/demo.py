@@ -188,13 +188,23 @@ def _load_official_report_evidence(repo_root: Path) -> dict[str, object] | None:
     public_sample = _load_official_report_summary(repo_root / "artifacts" / "report" / "official_default" / "summary.json")
     proof_case = _load_official_report_summary(repo_root / "artifacts" / "report" / "official_search_proof" / "summary.json")
     quality_case = _load_official_report_summary(repo_root / "artifacts" / "report" / "official_search_quality" / "summary.json")
-    if public_sample is None and proof_case is None and quality_case is None:
+    hidden_overloaded_bay = _load_official_report_summary(repo_root / "artifacts" / "report" / "hidden_overloaded_bay" / "summary.json")
+    hidden_tight_window = _load_official_report_summary(repo_root / "artifacts" / "report" / "hidden_tight_window" / "summary.json")
+    if (
+        public_sample is None
+        and proof_case is None
+        and quality_case is None
+        and hidden_overloaded_bay is None
+        and hidden_tight_window is None
+    ):
         return None
 
     return {
         "public_sample": public_sample,
         "proof_case": proof_case,
         "quality_case": quality_case,
+        "hidden_overloaded_bay": hidden_overloaded_bay,
+        "hidden_tight_window": hidden_tight_window,
     }
 
 

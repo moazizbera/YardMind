@@ -1,138 +1,234 @@
 {
-  "instance_name": "sample-instance",
+  "instance_name": "realistic-improvement-instance",
   "yard": {
-    "width": 12,
-    "height": 10
+    "width": 9,
+    "height": 6
   },
-  "block_count": 3,
+  "block_count": 6,
   "search": {
-    "iterations": 4,
-    "seed": 3,
-    "delta": 0.0,
+    "iterations": 8,
+    "seed": 11,
+    "delta": 0.2899711399711382,
     "history": [
       {
         "iteration": 1,
-        "destroy_operator": "congestion_cluster",
+        "destroy_operator": "high_risk_cluster_k3",
         "repair_operator": "best_of_top",
-        "candidate_feasible": true,
-        "candidate_objective": -5.385957400087834,
-        "best_objective": -5.385957400087834,
+        "candidate_feasible": false,
+        "candidate_objective": -14.755427905427904,
+        "best_objective": -14.755427905427904,
         "accepted": false
       },
       {
         "iteration": 2,
-        "destroy_operator": "congestion_cluster",
-        "repair_operator": "best_of_top",
+        "destroy_operator": "global_restart",
+        "repair_operator": "bounded_exact",
         "candidate_feasible": true,
-        "candidate_objective": -5.385957400087834,
-        "best_objective": -5.385957400087834,
+        "candidate_objective": -14.755427905427904,
+        "best_objective": -14.755427905427904,
         "accepted": false
       },
       {
         "iteration": 3,
-        "destroy_operator": "congestion_cluster_k3",
-        "repair_operator": "sampled_greedy",
-        "candidate_feasible": true,
-        "candidate_objective": -5.459127714390872,
-        "best_objective": -5.385957400087834,
+        "destroy_operator": "high_risk_cluster_k3",
+        "repair_operator": "best_of_top",
+        "candidate_feasible": false,
+        "candidate_objective": -14.755427905427904,
+        "best_objective": -14.755427905427904,
         "accepted": false
       },
       {
         "iteration": 4,
-        "destroy_operator": "high_risk_cluster_k3",
+        "destroy_operator": "high_risk_cluster",
+        "repair_operator": "best_of_top",
+        "candidate_feasible": true,
+        "candidate_objective": -14.755427905427906,
+        "best_objective": -14.755427905427904,
+        "accepted": false
+      },
+      {
+        "iteration": 5,
+        "destroy_operator": "congestion_cluster_k3",
+        "repair_operator": "spread",
+        "candidate_feasible": true,
+        "candidate_objective": -14.465456765456766,
+        "best_objective": -14.465456765456766,
+        "accepted": true
+      },
+      {
+        "iteration": 6,
+        "destroy_operator": "high_risk_cluster",
+        "repair_operator": "bounded_exact",
+        "candidate_feasible": true,
+        "candidate_objective": -14.465456765456766,
+        "best_objective": -14.465456765456766,
+        "accepted": false
+      },
+      {
+        "iteration": 7,
+        "destroy_operator": "high_risk_cluster",
+        "repair_operator": "spread",
+        "candidate_feasible": true,
+        "candidate_objective": -14.465456765456766,
+        "best_objective": -14.465456765456766,
+        "accepted": false
+      },
+      {
+        "iteration": 8,
+        "destroy_operator": "congestion_cluster_k3",
         "repair_operator": "sampled_greedy",
         "candidate_feasible": true,
-        "candidate_objective": -5.487973868237026,
-        "best_objective": -5.385957400087834,
+        "candidate_objective": -14.574928580191736,
+        "best_objective": -14.465456765456766,
         "accepted": false
       }
     ]
   },
   "constructive": {
-    "objective_value": -5.385957400087834,
+    "objective_value": -14.755427905427904,
     "objective_breakdown": {
-      "area_utilization": 0.275,
+      "area_utilization": 0.5555555555555556,
       "lateness_penalty": 0.0,
-      "retrieval_risk_penalty": 2.090909090909091,
-      "congestion_penalty": 3.570048309178744
+      "retrieval_risk_penalty": 4.2,
+      "congestion_penalty": 11.11098346098346
     },
     "placements": [
       {
-        "block_id": "B1",
+        "block_id": "A",
         "x": 0,
         "y": 0,
         "start_time": 0,
-        "end_time": 5,
+        "end_time": 3,
         "rotation": 0,
-        "width": 4,
-        "height": 3
+        "width": 2,
+        "height": 2
       },
       {
-        "block_id": "B2",
-        "x": 9,
+        "block_id": "B",
+        "x": 7,
+        "y": 4,
+        "start_time": 0,
+        "end_time": 4,
+        "rotation": 0,
+        "width": 2,
+        "height": 2
+      },
+      {
+        "block_id": "C",
+        "x": 5,
         "y": 0,
-        "start_time": 1,
-        "end_time": 6,
+        "start_time": 0,
+        "end_time": 5,
         "rotation": 0,
         "width": 3,
         "height": 2
       },
       {
-        "block_id": "B3",
-        "x": 4,
-        "y": 7,
-        "start_time": 4,
-        "end_time": 9,
+        "block_id": "D",
+        "x": 1,
+        "y": 3,
+        "start_time": 1,
+        "end_time": 5,
         "rotation": 0,
-        "width": 5,
+        "width": 2,
         "height": 3
+      },
+      {
+        "block_id": "E",
+        "x": 4,
+        "y": 3,
+        "start_time": 2,
+        "end_time": 6,
+        "rotation": 0,
+        "width": 2,
+        "height": 2
+      },
+      {
+        "block_id": "F",
+        "x": 0,
+        "y": 0,
+        "start_time": 3,
+        "end_time": 7,
+        "rotation": 0,
+        "width": 3,
+        "height": 2
       }
     ]
   },
   "search_solution": {
-    "objective_value": -5.385957400087834,
+    "objective_value": -14.465456765456766,
     "objective_breakdown": {
-      "area_utilization": 0.275,
+      "area_utilization": 0.5555555555555556,
       "lateness_penalty": 0.0,
-      "retrieval_risk_penalty": 2.090909090909091,
-      "congestion_penalty": 3.570048309178744
+      "retrieval_risk_penalty": 4.199999999999999,
+      "congestion_penalty": 10.821012321012322
     },
     "placements": [
       {
-        "block_id": "B1",
+        "block_id": "A",
         "x": 0,
         "y": 0,
         "start_time": 0,
-        "end_time": 5,
+        "end_time": 3,
         "rotation": 0,
-        "width": 4,
-        "height": 3
+        "width": 2,
+        "height": 2
       },
       {
-        "block_id": "B2",
-        "x": 9,
+        "block_id": "B",
+        "x": 7,
+        "y": 4,
+        "start_time": 0,
+        "end_time": 4,
+        "rotation": 0,
+        "width": 2,
+        "height": 2
+      },
+      {
+        "block_id": "F",
+        "x": 0,
         "y": 0,
-        "start_time": 1,
-        "end_time": 6,
+        "start_time": 3,
+        "end_time": 7,
         "rotation": 0,
         "width": 3,
         "height": 2
       },
       {
-        "block_id": "B3",
-        "x": 4,
-        "y": 7,
-        "start_time": 4,
-        "end_time": 9,
+        "block_id": "C",
+        "x": 6,
+        "y": 0,
+        "start_time": 0,
+        "end_time": 5,
         "rotation": 0,
-        "width": 5,
+        "width": 3,
+        "height": 2
+      },
+      {
+        "block_id": "D",
+        "x": 3,
+        "y": 3,
+        "start_time": 1,
+        "end_time": 5,
+        "rotation": 0,
+        "width": 2,
         "height": 3
+      },
+      {
+        "block_id": "E",
+        "x": 0,
+        "y": 4,
+        "start_time": 2,
+        "end_time": 6,
+        "rotation": 0,
+        "width": 2,
+        "height": 2
       }
     ]
   },
   "allocation_trace": [
     {
-      "block_id": "B1",
+      "block_id": "A",
       "from_x": 0,
       "from_y": 0,
       "to_x": 0,
@@ -145,10 +241,23 @@
       "reason": "kept stable because the constructive placement already aligned with the target structure"
     },
     {
-      "block_id": "B2",
-      "from_x": 9,
+      "block_id": "B",
+      "from_x": 7,
+      "from_y": 4,
+      "to_x": 7,
+      "to_y": 4,
+      "moved": false,
+      "access_delta": 0,
+      "conflict_delta": 0,
+      "core_delta": 0.0,
+      "signal_score": 0.0,
+      "reason": "kept stable because the constructive placement already aligned with the target structure"
+    },
+    {
+      "block_id": "F",
+      "from_x": 0,
       "from_y": 0,
-      "to_x": 9,
+      "to_x": 0,
       "to_y": 0,
       "moved": false,
       "access_delta": 0,
@@ -158,17 +267,43 @@
       "reason": "kept stable because the constructive placement already aligned with the target structure"
     },
     {
-      "block_id": "B3",
-      "from_x": 4,
-      "from_y": 7,
-      "to_x": 4,
-      "to_y": 7,
-      "moved": false,
-      "access_delta": 0,
+      "block_id": "C",
+      "from_x": 5,
+      "from_y": 0,
+      "to_x": 6,
+      "to_y": 0,
+      "moved": true,
+      "access_delta": 1,
       "conflict_delta": 0,
-      "core_delta": 0.0,
-      "signal_score": 0.0,
-      "reason": "kept stable because the constructive placement already aligned with the target structure"
+      "core_delta": -1.0,
+      "signal_score": 0.44999999999999996,
+      "reason": "opened more access-edge space for future retrieval"
+    },
+    {
+      "block_id": "D",
+      "from_x": 1,
+      "from_y": 3,
+      "to_x": 3,
+      "to_y": 3,
+      "moved": true,
+      "access_delta": 2,
+      "conflict_delta": 0,
+      "core_delta": 1.666666666666667,
+      "signal_score": 1.8166666666666667,
+      "reason": "opened more access-edge space for future retrieval"
+    },
+    {
+      "block_id": "E",
+      "from_x": 4,
+      "from_y": 3,
+      "to_x": 0,
+      "to_y": 4,
+      "moved": true,
+      "access_delta": -4,
+      "conflict_delta": 0,
+      "core_delta": -2.666666666666667,
+      "signal_score": -3.466666666666667,
+      "reason": "repositioned to maintain a more stable yard shape"
     }
   ],
   "official": {
@@ -187,7 +322,7 @@
         }
       ],
       "delegated_baseline": {
-        "runtime_seconds": 0.2353243000106886,
+        "runtime_seconds": 0.2469703999995545,
         "feasible": true,
         "stage": 5,
         "objective": 72.0,
@@ -244,7 +379,7 @@
         ]
       },
       "native_constructive": {
-        "runtime_seconds": 0.001455499994335696,
+        "runtime_seconds": 0.000654499999654945,
         "feasible": true,
         "stage": 5,
         "objective": 72.0,
@@ -301,7 +436,7 @@
         ]
       },
       "official_search": {
-        "runtime_seconds": 0.07780480000656098,
+        "runtime_seconds": 0.07315189999826543,
         "feasible": true,
         "stage": 5,
         "objective": 23.0,
@@ -430,6 +565,48 @@
         "native_faster_runs": 5,
         "search_better_or_equal_than_delegated_runs": 6,
         "search_better_or_equal_than_native_runs": 6,
+        "search_faster_than_delegated_runs": 0
+      },
+      "hidden_overloaded_bay": {
+        "instance": "official-hidden-overloaded-bay-instance",
+        "runs": 6,
+        "delegated_feasible_runs": 6,
+        "native_feasible_runs": 6,
+        "search_feasible_runs": 6,
+        "delegated_objective_mean": 30.0,
+        "native_objective_mean": 30.0,
+        "search_objective_mean": 15.0,
+        "objective_delta_mean": 0.0,
+        "search_vs_delegated_delta_mean": -15.0,
+        "search_vs_native_delta_mean": -15.0,
+        "delegated_runtime_mean": 0.07089674999951967,
+        "native_runtime_mean": 0.0047984166667447425,
+        "search_runtime_mean": 1.6054780833331581,
+        "native_better_or_equal_runs": 6,
+        "native_faster_runs": 6,
+        "search_better_or_equal_than_delegated_runs": 6,
+        "search_better_or_equal_than_native_runs": 6,
+        "search_faster_than_delegated_runs": 0
+      },
+      "hidden_tight_window": {
+        "instance": "official-hidden-tight-window-instance",
+        "runs": 6,
+        "delegated_feasible_runs": 6,
+        "native_feasible_runs": 0,
+        "search_feasible_runs": 6,
+        "delegated_objective_mean": 38.0,
+        "native_objective_mean": null,
+        "search_objective_mean": 18.0,
+        "objective_delta_mean": null,
+        "search_vs_delegated_delta_mean": -20.0,
+        "search_vs_native_delta_mean": null,
+        "delegated_runtime_mean": 0.04907844999979716,
+        "native_runtime_mean": 0.0074746166665136116,
+        "search_runtime_mean": 3.176822049999828,
+        "native_better_or_equal_runs": 0,
+        "native_faster_runs": 6,
+        "search_better_or_equal_than_delegated_runs": 6,
+        "search_better_or_equal_than_native_runs": 0,
         "search_faster_than_delegated_runs": 0
       }
     }

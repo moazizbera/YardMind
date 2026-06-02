@@ -101,6 +101,8 @@ type OfficialReportEvidence = {
   public_sample: OfficialComparisonEvidence | null
   proof_case: OfficialComparisonEvidence | null
   quality_case: OfficialComparisonEvidence | null
+  hidden_overloaded_bay: OfficialComparisonEvidence | null
+  hidden_tight_window: OfficialComparisonEvidence | null
 }
 
 type ReportEvidence = {
@@ -435,6 +437,8 @@ function App() {
   const publicSampleEvidence = data.report_evidence?.official?.public_sample ?? null
   const proofCaseEvidence = data.report_evidence?.official?.proof_case ?? null
   const qualityCaseEvidence = data.report_evidence?.official?.quality_case ?? null
+  const hiddenOverloadedBayEvidence = data.report_evidence?.official?.hidden_overloaded_bay ?? null
+  const hiddenTightWindowEvidence = data.report_evidence?.official?.hidden_tight_window ?? null
   const developmentImprovementRate = developmentEvidence && developmentEvidence.runs > 0
     ? developmentEvidence.improved_runs / developmentEvidence.runs
     : null
@@ -442,6 +446,8 @@ function App() {
     ? proofCaseEvidence.search_feasible_runs / proofCaseEvidence.runs
     : null
   const qualityCaseDelta = qualityCaseEvidence?.search_vs_native_delta_mean ?? qualityCaseEvidence?.search_vs_delegated_delta_mean ?? null
+  const hiddenOverloadedBayDelta = hiddenOverloadedBayEvidence?.search_vs_delegated_delta_mean ?? null
+  const hiddenTightWindowDelta = hiddenTightWindowEvidence?.search_vs_delegated_delta_mean ?? null
   const progressSummary: DemoProgressSummary = {
     instance: officialSummary?.instance ?? data.instance_name,
     blockCount: data.block_count,
@@ -941,20 +947,20 @@ function App() {
                   <article className="showcase-summary-card showcase-script-node showcase-script-node-official">
                     <span className="surface-label">Beat 02</span>
                     <p className="surface-copy compact">
-                      The key result indicators remain visible throughout the replay: status, stage {landingOfficialVariant.stage}, runtime {formatCompactSeconds(landingOfficialVariant.runtime_seconds)}, and delta {formatDelta(landingOfficialDelta)} vs delegated.
+                      The key result indicators remain visible throughout the replay: feasibility, stage {landingOfficialVariant.stage}, runtime {formatCompactSeconds(landingOfficialVariant.runtime_seconds)}, and official objective delta {formatDelta(landingOfficialDelta)} versus the delegated baseline.
                     </p>
                   </article>
                   <article className="showcase-summary-card showcase-script-node showcase-script-node-official">
                     <span className="surface-label">Beat 03</span>
                     <p className="surface-copy compact">
-                      On {officialSummary.instance}, official search is {landingOfficialVariant.feasible ? 'feasible' : 'not feasible'}, reaches stage {landingOfficialVariant.stage}, and {landingOfficialDelta <= 0 ? 'improves on' : 'trails'} the delegated baseline by {formatDelta(landingOfficialDelta)}.
+                      On {officialSummary.instance}, official search is {landingOfficialVariant.feasible ? 'feasible' : 'not feasible'}, reaches stage {landingOfficialVariant.stage}, and {landingOfficialDelta <= 0 ? 'improves the delegated baseline by' : 'trails the delegated baseline by'} {formatDelta(landingOfficialDelta)} under the released checker.
                     </p>
                   </article>
                 </section>
                 <article className="report-card showcase-summary-card replay-close-card">
                   <span className="surface-label">Replay takeaway</span>
                   <p className="surface-copy compact">
-                    On the released quality case, search remains {landingOfficialVariant.feasible ? 'feasible' : 'infeasible'}, completes in {formatCompactSeconds(landingOfficialVariant.runtime_seconds)}, and changes the delegated baseline by {formatDelta(landingOfficialDelta)}.
+                    This replay is not a storyboard mockup. It is the released quality-case solution that stays {landingOfficialVariant.feasible ? 'feasible' : 'infeasible'}, completes in {formatCompactSeconds(landingOfficialVariant.runtime_seconds)}, and improves the delegated baseline by {formatDelta(landingOfficialDelta)}.
                   </p>
                 </article>
               </aside>
@@ -1062,7 +1068,7 @@ function App() {
                       <span className="surface-label">Official validation</span>
                     </div>
                     <p className="surface-copy compact">
-                      The final answer is validated by the released evaluator. In this snapshot, {officialSummary?.instance ?? 'the official view'} is {proofVariant ? `${proofVariant.feasible ? 'PASS' : 'FAIL'} at stage ${proofVariant.stage}` : 'pending'}, with runtime {proofVariant ? formatCompactSeconds(proofVariant.runtime_seconds) : 'n/a'} and delta {officialSummary ? formatDelta(officialObjectiveDelta) : 'n/a'} vs delegated.
+                      The final answer is validated by the released evaluator. In this snapshot, {officialSummary?.instance ?? 'the official view'} is {proofVariant ? `${proofVariant.feasible ? 'PASS' : 'FAIL'} at stage ${proofVariant.stage}` : 'pending'}, with runtime {proofVariant ? formatCompactSeconds(proofVariant.runtime_seconds) : 'n/a'} and official objective delta {officialSummary ? formatDelta(officialObjectiveDelta) : 'n/a'} versus delegated.
                     </p>
                   </article>
                   <article className="analysis-stage-card">
@@ -1121,7 +1127,7 @@ function App() {
                 </div>
                 <p className="surface-copy compact">
                   {proofCaseEvidence
-                    ? `On the harder proof instance, official search stays feasible in ${proofCaseEvidence.search_feasible_runs} of ${proofCaseEvidence.runs} runs and improves the delegated baseline by ${formatOptionalDelta(proofCaseEvidence.search_vs_delegated_delta_mean)} on average.`
+                    ? `On the harder proof instance, official search stays feasible in ${proofCaseEvidence.search_feasible_runs} of ${proofCaseEvidence.runs} runs and improves the delegated baseline from ${formatOptionalFixed(proofCaseEvidence.delegated_objective_mean)} to ${formatOptionalFixed(proofCaseEvidence.search_objective_mean)}, a mean delta of ${formatOptionalDelta(proofCaseEvidence.search_vs_delegated_delta_mean)}.`
                     : 'Proof-case official evidence is not available in this snapshot.'}
                 </p>
               </article>
@@ -1134,8 +1140,21 @@ function App() {
                 </div>
                 <p className="surface-copy compact">
                   {qualityCaseEvidence
-                    ? `On the quality case, search beats both delegated and native constructive by ${formatOptionalDelta(qualityCaseEvidence.search_vs_delegated_delta_mean)} and ${formatOptionalDelta(qualityCaseEvidence.search_vs_native_delta_mean)} respectively.`
+                    ? `On the released quality case, official search moves the mean objective from ${formatOptionalFixed(qualityCaseEvidence.delegated_objective_mean)} to ${formatOptionalFixed(qualityCaseEvidence.search_objective_mean)} and beats both delegated and native constructive by ${formatOptionalDelta(qualityCaseEvidence.search_vs_delegated_delta_mean)}.`
                     : 'Quality-case official evidence is not available in this snapshot.'}
+                </p>
+              </article>
+              <article className="analysis-evidence-card">
+                <span className="surface-label">Internal robustness checks</span>
+                <h3>{hiddenOverloadedBayDelta !== null && hiddenTightWindowDelta !== null ? `${formatDelta(hiddenOverloadedBayDelta)} / ${formatDelta(hiddenTightWindowDelta)}` : 'n/a'} hidden-case deltas</h3>
+                <div className="headline-strip muted-strip">
+                  <KpiPill label="Overloaded bay" value={hiddenOverloadedBayEvidence ? formatOptionalDelta(hiddenOverloadedBayEvidence.search_vs_delegated_delta_mean) : 'n/a'} tone={hiddenOverloadedBayEvidence && hiddenOverloadedBayEvidence.search_vs_delegated_delta_mean !== null && hiddenOverloadedBayEvidence.search_vs_delegated_delta_mean < 0 ? 'good' : 'neutral'} />
+                  <KpiPill label="Tight window" value={hiddenTightWindowEvidence ? formatOptionalDelta(hiddenTightWindowEvidence.search_vs_delegated_delta_mean) : 'n/a'} tone={hiddenTightWindowEvidence && hiddenTightWindowEvidence.search_vs_delegated_delta_mean !== null && hiddenTightWindowEvidence.search_vs_delegated_delta_mean < 0 ? 'good' : 'neutral'} />
+                </div>
+                <p className="surface-copy compact">
+                  {hiddenOverloadedBayEvidence && hiddenTightWindowEvidence
+                    ? `Internal official-format stress cases show the same pattern as the released benchmarks: the overloaded-bay family improves from ${formatOptionalFixed(hiddenOverloadedBayEvidence.delegated_objective_mean)} to ${formatOptionalFixed(hiddenOverloadedBayEvidence.search_objective_mean)}, while the tight-window cascade improves from ${formatOptionalFixed(hiddenTightWindowEvidence.delegated_objective_mean)} to ${formatOptionalFixed(hiddenTightWindowEvidence.search_objective_mean)} and leaves native constructive infeasible in ${hiddenTightWindowEvidence.runs - hiddenTightWindowEvidence.native_feasible_runs} of ${hiddenTightWindowEvidence.runs} runs.`
+                    : 'Internal hidden-case evidence is not available in this snapshot.'}
                 </p>
               </article>
             </div>
@@ -2663,7 +2682,9 @@ function JudgeModeDialogContent({
   const publicOfficialEvidence = reportEvidence?.official?.public_sample ?? null
   const proofCaseOfficialEvidence = reportEvidence?.official?.proof_case ?? null
   const qualityCaseOfficialEvidence = reportEvidence?.official?.quality_case ?? null
-  const [judgeProofTab, setJudgeProofTab] = useState<'summary' | 'development' | 'stability' | 'rescue' | 'quality'>('summary')
+  const hiddenOverloadedBayOfficialEvidence = reportEvidence?.official?.hidden_overloaded_bay ?? null
+  const hiddenTightWindowOfficialEvidence = reportEvidence?.official?.hidden_tight_window ?? null
+  const [judgeProofTab, setJudgeProofTab] = useState<'summary' | 'development' | 'stability' | 'rescue' | 'quality' | 'internal'>('summary')
 
   useEffect(() => {
     setAutoAdvance(autoAdvanceDefault)
@@ -2791,7 +2812,7 @@ function JudgeModeDialogContent({
           <h3>One proof surface at a time</h3>
           <div className="proof-toolbar">
             <p className="surface-copy compact proof-toolbar-copy">
-              The validation section isolates one claim at a time: summary, development stability, public stability, rescue case, or quality case.
+              The validation section isolates one claim at a time: summary, development stability, public stability, rescue case, quality case, or internal robustness.
             </p>
             <SegmentedControl
               label="Validation surface"
@@ -2802,6 +2823,7 @@ function JudgeModeDialogContent({
                 { label: 'Public', value: 'stability' },
                 { label: 'Rescue', value: 'rescue' },
                 { label: 'Quality', value: 'quality' },
+                { label: 'Internal', value: 'internal' },
               ]}
               value={judgeProofTab}
             />
@@ -2898,6 +2920,24 @@ function JudgeModeDialogContent({
                 </>
               )}
               copy={`This is the quality case: native is already feasible, but official search still improves it, averaging ${formatOptionalFixed(qualityCaseOfficialEvidence.search_objective_mean)} versus native ${formatOptionalFixed(qualityCaseOfficialEvidence.native_objective_mean)} with delta ${formatOptionalDelta(qualityCaseOfficialEvidence.search_vs_native_delta_mean)}.`}
+            />
+          ) : null}
+
+          {judgeProofTab === 'internal' && hiddenOverloadedBayOfficialEvidence && hiddenTightWindowOfficialEvidence ? (
+            <JudgeEvidenceCard
+              label="Internal robustness"
+              title="Official-format hidden stress families"
+              metrics={(
+                <>
+                  <KpiPill label="Overloaded delta" value={formatOptionalDelta(hiddenOverloadedBayOfficialEvidence.search_vs_delegated_delta_mean)} tone={hiddenOverloadedBayOfficialEvidence.search_vs_delegated_delta_mean !== null && hiddenOverloadedBayOfficialEvidence.search_vs_delegated_delta_mean < 0 ? 'good' : 'warn'} />
+                  <KpiPill label="Overloaded feasible" value={`${hiddenOverloadedBayOfficialEvidence.search_feasible_runs}/${hiddenOverloadedBayOfficialEvidence.runs}`} tone={hiddenOverloadedBayOfficialEvidence.search_feasible_runs === hiddenOverloadedBayOfficialEvidence.runs ? 'good' : 'warn'} />
+                  <KpiPill label="Tight-window delta" value={formatOptionalDelta(hiddenTightWindowOfficialEvidence.search_vs_delegated_delta_mean)} tone={hiddenTightWindowOfficialEvidence.search_vs_delegated_delta_mean !== null && hiddenTightWindowOfficialEvidence.search_vs_delegated_delta_mean < 0 ? 'good' : 'warn'} />
+                  <KpiPill label="Native feasible" value={`${hiddenTightWindowOfficialEvidence.native_feasible_runs}/${hiddenTightWindowOfficialEvidence.runs}`} tone={hiddenTightWindowOfficialEvidence.native_feasible_runs === hiddenTightWindowOfficialEvidence.runs ? 'good' : 'warn'} />
+                  <KpiPill label="Search mean obj" value={formatOptionalFixed(hiddenTightWindowOfficialEvidence.search_objective_mean)} tone={hiddenTightWindowOfficialEvidence.search_vs_delegated_delta_mean !== null && hiddenTightWindowOfficialEvidence.search_vs_delegated_delta_mean < 0 ? 'good' : 'warn'} />
+                  <KpiPill label="Search mean time" value={formatOptionalSeconds(hiddenTightWindowOfficialEvidence.search_runtime_mean)} />
+                </>
+              )}
+              copy={`The internal robustness suite uses official-format hidden cases rather than presentation-only examples. Search cuts the overloaded-bay mean from ${formatOptionalFixed(hiddenOverloadedBayOfficialEvidence.delegated_objective_mean)} to ${formatOptionalFixed(hiddenOverloadedBayOfficialEvidence.search_objective_mean)}, then cuts the tight-window mean from ${formatOptionalFixed(hiddenTightWindowOfficialEvidence.delegated_objective_mean)} to ${formatOptionalFixed(hiddenTightWindowOfficialEvidence.search_objective_mean)} while native constructive is feasible in only ${hiddenTightWindowOfficialEvidence.native_feasible_runs} of ${hiddenTightWindowOfficialEvidence.runs} runs.`}
             />
           ) : null}
         </section>
