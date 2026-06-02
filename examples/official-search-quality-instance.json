@@ -1,0 +1,100 @@
+{
+  "name": "official-search-quality-instance",
+  "bays": [
+    {
+      "width": 6,
+      "height": 5
+    },
+    {
+      "width": 5,
+      "height": 6
+    }
+  ],
+  "blocks": [
+    {
+      "release_time": 2,
+      "due_date": 3,
+      "processing_time": 1,
+      "workload": 1,
+      "bay_preferences": [6, 10],
+      "shape": [
+        {
+          "orientation": 0,
+          "layers": [
+            [
+              [0, 0],
+              [4, 0],
+              [4, 2],
+              [0, 2]
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "release_time": 2,
+      "due_date": 8,
+      "processing_time": 2,
+      "workload": 4,
+      "bay_preferences": [5, 1],
+      "shape": [
+        {
+          "orientation": 0,
+          "layers": [
+            [
+              [0, 0],
+              [6, 0],
+              [6, 5],
+              [0, 5]
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "release_time": 2,
+      "due_date": 6,
+      "processing_time": 2,
+      "workload": 2,
+      "bay_preferences": [7, 1],
+      "shape": [
+        {
+          "orientation": 0,
+          "layers": [
+            [
+              [0, 0],
+              [6, 0],
+              [6, 3],
+              [0, 3]
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "release_time": 2,
+      "due_date": 4,
+      "processing_time": 3,
+      "workload": 9,
+      "bay_preferences": [4, 1],
+      "shape": [
+        {
+          "orientation": 0,
+          "layers": [
+            [
+              [0, 0],
+              [4, 0],
+              [4, 5],
+              [0, 5]
+            ]
+          ]
+        }
+      ]
+    }
+  ],
+  "weights": {
+    "w1": 10,
+    "w2": 3,
+    "w3": 1
+  }
+}

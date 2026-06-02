@@ -5,8 +5,9 @@ YardMind is a research-first optimization project for OGC 2026, focused on retri
 ## Demo Highlights
 
 - judge-friendly React control room for the development solver, search trace, and official constructive comparison
-- screenshot-ready presentation mode at `http://localhost:5173/?view=judge`
-- terminal-style solver walkthrough at `http://localhost:5173/?walkthrough=1` for live demos
+- screenshot-ready presentation mode via `./scripts/open-react-demo.ps1 -View judge`
+- solve-story capture mode via `./scripts/open-react-demo.ps1 -View story`
+- terminal-style solver walkthrough via `./scripts/open-react-demo.ps1 -View walkthrough`
 - exported demo artifacts under `artifacts/demo/`, including hackathon-ready PNG captures
 
 ## Goal
@@ -35,26 +36,28 @@ python -m yardmind.cli examples/sample-instance.json --mode constructive
 python -m yardmind.cli examples/sample-instance.json --mode search --iterations 6 --seed 11
 python -m yardmind.cli examples/sample-instance.json --mode benchmark --runs 2 --iterations 6 --seed 3 --output artifacts/benchmark-sample.json
 python scripts/generate_official_baseline_artifact.py
-python -m yardmind.demo --instance examples/sample-instance.json --output artifacts/demo/index.html
-pwsh -File scripts/open-demo.ps1
+python -m yardmind.demo --instance examples/realistic-improvement-instance.json --output artifacts/demo/index.html
+./scripts/open-demo.ps1
+./scripts/open-react-demo.ps1
+./scripts/capture-react-demo.ps1
 cd web
 npm install
-npm run dev
+npm run dev -- --host=127.0.0.1 --port=5173
 python scripts/compare_official_constructive_variants.py
 pytest
-pwsh -File scripts/validate-documented-workflow.ps1
+./scripts/validate-documented-workflow.ps1
 python scripts/generate_chart_ready_artifacts.py
 ```
 
 Search and benchmark modes also accept `--time-limit-seconds` for timeout-safe runs.
-`python -m yardmind.demo` generates a browser-viewable static demo page so the project has a presentation layer in addition to the CLI, including the development solver view plus official delegated-versus-native constructive comparison metrics and official bay placement snapshots.
+`python -m yardmind.demo` generates a browser-viewable static demo page so the project has a presentation layer in addition to the CLI, including the development solver view plus official delegated-versus-native constructive comparison metrics and official bay placement snapshots. The default demo now uses `examples/realistic-improvement-instance.json` for the development yard and `examples/official-search-quality-instance.json` for the official comparison so the landing view opens on a stronger presentation case.
 That same demo generation step now also writes `artifacts/demo/demo-data.json` and syncs `web/public/demo-data.json`, which is the live data source for the React presentation app under `web/`.
-`pwsh -File scripts/open-demo.ps1` regenerates that demo artifact and opens it in the default browser; use `-NoOpen` when you only want to rebuild the HTML.
-For the richer product UI, run `npm install` once in `web/`, then `npm run dev` to open the React control-room app backed by the latest generated demo snapshot.
+`./scripts/open-demo.ps1` regenerates that demo artifact and opens it in the default browser; use `-NoOpen` when you only want to rebuild the HTML.
+For the richer product UI, use `./scripts/open-react-demo.ps1` from the repo root. It starts the React dev server in a separate PowerShell window, auto-selects the next free local port when `5173` is occupied, prints the exact URL, and opens the browser automatically. Add `-Intro` when you want the animated splash to play first before opening the selected view, including direct routes such as `-View judge` or `-View replay-stage`. You can also run `npm install` once in `web/` and then `npm run dev -- --host=127.0.0.1 --port=5173`. On this Windows/npm path, Vite is more reliable with `--host=` and `--port=` argument forwarding than the spaced form.
 The loader also accepts `--input-format`, which now supports the development schema plus official OGC 2026 instance inspection.
 Official inspect mode also accepts `--solution` to validate a candidate operations JSON through the released baseline feasibility checker.
 Official constructive mode can now run either the delegated released baseline or the first YardMind-native official heuristic, and can write the returned operations JSON through `--output`.
-Official search mode now runs an initial official portfolio search by evaluating the released baseline constructive solver plus multiple YardMind-native constructive orderings, then refining the best native candidate with nearby order perturbations and targeted bay-bias perturbations before returning the best feasible objective found; it can also write the selected official operations JSON through `--output`.
+Official search mode now runs an official portfolio plus incumbent-refinement loop: it evaluates the released baseline constructive solver plus multiple YardMind-native constructive orderings, then repeatedly rebuilds perturbation neighborhoods around the current best feasible incumbent using nearby order changes, bay-bias shifts, neighbor-aware incumbent repair, objective-driven rebuilds, reinsertion candidates, and partial reconstruction before returning the best feasible objective found; it can also write the selected official operations JSON through `--output`.
 Official benchmark mode now compares those two official constructive variants on an official instance and prints feasibility, objective, and runtime side by side; use `--output` to persist the comparison summary as JSON.
 The native official heuristic now also scores urgency-weighted future bay scarcity and future window overlap, so when the current block has alternatives it preferentially preserves bays that later, tighter-slack blocks are more dependent on and avoids occupying those bays during the windows they are likely to need.
 The comparison script also records runtime alongside feasibility and objective in `artifacts/official/comparison/summary.json`.
@@ -68,20 +71,26 @@ The repository now has two presentation surfaces:
 Current screenshot artifacts:
 - `artifacts/demo/hackathon-frontend.png`
 - `artifacts/demo/hackathon-frontend-judge.png`
+- `artifacts/demo/hackathon-frontend-story.png`
 - `artifacts/demo/hackathon-frontend-walkthrough.png`
 
 Recommended local flow:
 
 ```bash
-python -m yardmind.demo --instance examples/sample-instance.json --output artifacts/demo/index.html
+python -m yardmind.demo --instance examples/realistic-improvement-instance.json --output artifacts/demo/index.html
 cd web
-npm run dev
+npm run dev -- --host=127.0.0.1 --port=5173
 ```
 
 Use `npm run build` in `web/` to produce a production bundle after refreshing the demo snapshot.
-Use `http://localhost:5173/?view=judge` for the tighter screenshot/export layout that trims the search table and emphasizes the product story above the fold.
-Use `http://localhost:5173/?walkthrough=1` to open the terminal-style solver walkthrough dialog for live explanation of the solve pipeline.
-To regenerate the PNG captures used for hackathon submission materials, run the frontend locally and capture either the default view or the judge view after refreshing the demo snapshot.
+Use `./scripts/open-react-demo.ps1 -View judge` for the screenshot-oriented layout, `./scripts/open-react-demo.ps1 -View story` for the solve-story flow, and `./scripts/open-react-demo.ps1 -View walkthrough` to jump straight into the terminal walkthrough view. Add `-Intro` when you want the splash to play before the selected surface, and add `-Foreground` when you want the Vite logs in the current terminal instead of a separate PowerShell window.
+Use `./scripts/capture-react-demo.ps1` to regenerate the demo snapshot and export the default, judge, story, and walkthrough PNG artifacts in one command. The first run installs the Playwright Chromium browser used for headless capture.
+If you start the frontend manually, append `?view=judge`, `?view=story`, or `?walkthrough=1` to whatever local URL Vite prints.
+The judge view trims the search table and emphasizes the product story above the fold.
+The story view opens the walkthrough automatically over a simplified background.
+The walkthrough view opens the terminal-style solver dialog for live explanation of the solve pipeline.
+The walkthrough now supports autoplay plus manual `Next line`, `Pause/Resume`, and `Replay` controls for live judging.
+To regenerate the PNG captures used for hackathon submission materials, run `./scripts/capture-react-demo.ps1` after refreshing the demo snapshot.
 
 ## Current Input Schema
 
@@ -109,7 +118,7 @@ The scaffold currently supports a simple JSON format for local development:
 
 This is a development schema for the scaffold. The repository now also supports loading official OGC 2026 JSON instances for inspection and validation against the released baseline feasibility checker.
 
-Today, official search mode is available as a diversified portfolio over the current official constructive variants, but a true official neighborhood-search layer is still not implemented.
+Today, official search mode includes a bounded incumbent-refinement loop over the current official constructive variants and perturbation families, including neighbor-aware incumbent repair around overlap and bay-pressure interactions, but it still stops short of a true direct assignment destroy/repair neighborhood search over incumbent official solutions.
 
 Official example commands:
 
@@ -145,5 +154,5 @@ This scaffold provides:
 ## Submission Notes
 
 See `docs/handoff/submission-packaging-notes.md` for the current submission packaging checklist and reproducibility notes.
-The repository also includes `scripts/validate-documented-workflow.ps1` to run the current documented validation workflow end to end.
+The repository also includes `./scripts/validate-documented-workflow.ps1` to run the current documented validation workflow end to end.
 For report and presentation charts, use `scripts/generate_chart_ready_artifacts.py` and the output map in `docs/report/chart-ready-artifacts.md`.

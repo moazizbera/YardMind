@@ -4,6 +4,7 @@ import contextlib
 import io
 import importlib.util
 import json
+import math
 import sys
 import time
 from functools import lru_cache
@@ -41,7 +42,10 @@ def solve_official_constructive(problem: dict[str, Any], timelimit: float = 60.0
 
 
 def solve_official_search(problem: dict[str, Any], timelimit: float = 60.0) -> dict[str, Any]:
-    candidate_solutions = [solve_official_constructive(problem, timelimit=timelimit)]
+    started_at = time.time()
+    candidate_solutions: list[dict[str, Any]] = []
+    with contextlib.suppress(OfficialSupportError):
+        candidate_solutions.append(solve_official_constructive(problem, timelimit=timelimit))
     candidate_orders = _build_official_search_orders(problem)
     if not candidate_orders:
         candidate_orders = [_default_official_block_order(problem)]
@@ -58,81 +62,150 @@ def solve_official_search(problem: dict[str, Any], timelimit: float = 60.0) -> d
     if best_native_order is not None:
         neighbor_orders = _build_order_neighbors(best_native_order)
         if neighbor_orders:
+            neighbor_orders = _select_promising_order_neighbors(best_native_order, neighbor_orders)
             neighbor_candidates, _ = _evaluate_native_order_candidates(
                 problem,
                 neighbor_orders,
-                timelimit=max(0.01, remaining_budget * 0.6),
+                timelimit=max(
+                    max(0.01, remaining_budget * 0.6),
+                    _resolve_search_stage_timelimit(timelimit, started_at, 0.6),
+                ),
             )
             candidate_solutions.extend(neighbor_candidates)
 
-        best_solution, _ = _select_best_official_candidate(problem, candidate_solutions)
-        if best_solution is not None:
-            bay_bias_candidates = _build_bay_bias_candidates(problem, best_solution)
-            if bay_bias_candidates:
-                candidate_solutions.extend(
-                    _evaluate_bay_bias_candidates(
-                        problem,
-                        block_order=best_native_order,
-                        candidate_biases=bay_bias_candidates,
-                        timelimit=max(0.01, remaining_budget * 0.4),
-                    )
-                )
-
-            combined_candidates = _build_combined_perturbation_candidates(problem, best_solution, best_native_order)
-            if combined_candidates:
-                candidate_solutions.extend(
-                    _evaluate_combined_perturbation_candidates(
-                        problem,
-                        candidate_specs=combined_candidates,
-                        timelimit=max(0.01, remaining_budget * 0.25),
-                    )
-                )
-
-            best_solution, _ = _select_best_official_candidate(problem, candidate_solutions)
-            if best_solution is not None:
-                rebuild_candidates = _build_objective_rebuild_candidates(problem, best_solution, best_native_order)
-                if rebuild_candidates:
-                    candidate_solutions.extend(
-                        _evaluate_combined_perturbation_candidates(
-                            problem,
-                            candidate_specs=rebuild_candidates,
-                            timelimit=max(0.01, remaining_budget * 0.15),
-                        )
-                    )
-
-            best_solution, _ = _select_best_official_candidate(problem, candidate_solutions)
-            if best_solution is not None:
-                reinsertion_candidates = _build_objective_reinsertion_candidates(problem, best_solution, best_native_order)
-                if reinsertion_candidates:
-                    candidate_solutions.extend(
-                        _evaluate_combined_perturbation_candidates(
-                            problem,
-                            candidate_specs=reinsertion_candidates,
-                            timelimit=max(0.01, remaining_budget * 0.1),
-                        )
-                    )
-
-            best_solution, _ = _select_best_official_candidate(problem, candidate_solutions)
-            if best_solution is not None:
-                partial_reconstruction_candidates = _build_objective_partial_reconstruction_candidates(
-                    problem,
-                    best_solution,
-                    best_native_order,
-                )
-                if partial_reconstruction_candidates:
-                    candidate_solutions.extend(
-                        _evaluate_partial_reconstruction_candidates(
-                            problem,
-                            candidate_specs=partial_reconstruction_candidates,
-                            timelimit=max(0.01, remaining_budget * 0.08),
-                        )
-                    )
+        candidate_solutions.extend(
+            _run_official_incumbent_refinement_loop(
+                problem,
+                candidate_solutions=candidate_solutions,
+                base_block_order=best_native_order,
+                started_at=started_at,
+                timelimit=timelimit,
+                initial_remaining_budget=remaining_budget,
+            )
+        )
 
     best_solution, best_result = _select_best_official_candidate(problem, candidate_solutions)
 
     if best_solution is None:
         raise OfficialSupportError("Official search could not produce any candidate solution.")
     return best_solution
+
+
+def _run_official_incumbent_refinement_loop(
+    problem: dict[str, Any],
+    *,
+    candidate_solutions: list[dict[str, Any]],
+    base_block_order: list[int],
+    started_at: float,
+    timelimit: float,
+    initial_remaining_budget: float,
+) -> list[dict[str, Any]]:
+    extra_candidates: list[dict[str, Any]] = []
+    incumbent_solution, incumbent_result = _select_best_official_candidate(problem, candidate_solutions)
+    if incumbent_solution is None or incumbent_result is None:
+        return extra_candidates
+
+    incumbent_key = _official_result_key(incumbent_result)
+    current_block_order = list(base_block_order)
+    remaining_budget = max(0.01, initial_remaining_budget)
+    iteration_budget_shares = [0.32, 0.22, 0.16, 0.12, 0.1, 0.08]
+
+    for iteration in range(2):
+        elapsed = time.time() - started_at
+        if elapsed >= timelimit * 0.97:
+            break
+
+        loop_candidates: list[dict[str, Any]] = []
+
+        bay_bias_candidates = _build_bay_bias_candidates(problem, incumbent_solution)
+        if bay_bias_candidates:
+            loop_candidates.extend(
+                _evaluate_bay_bias_candidates(
+                    problem,
+                    block_order=current_block_order,
+                    candidate_biases=bay_bias_candidates,
+                    timelimit=_resolve_search_stage_timelimit(remaining_budget, started_at=started_at, fraction=iteration_budget_shares[0]),
+                )
+            )
+
+        incumbent_repair_candidates = _build_incumbent_repair_candidates(
+            problem,
+            incumbent_solution,
+            current_block_order,
+        )
+        if incumbent_repair_candidates:
+            loop_candidates.extend(
+                _evaluate_partial_reconstruction_candidates(
+                    problem,
+                    candidate_specs=incumbent_repair_candidates,
+                    timelimit=_resolve_search_stage_timelimit(remaining_budget, started_at=started_at, fraction=iteration_budget_shares[1]),
+                )
+            )
+
+        combined_candidates = _build_combined_perturbation_candidates(problem, incumbent_solution, current_block_order)
+        if combined_candidates:
+            loop_candidates.extend(
+                _evaluate_combined_perturbation_candidates(
+                    problem,
+                    candidate_specs=combined_candidates,
+                    timelimit=_resolve_search_stage_timelimit(remaining_budget, started_at=started_at, fraction=iteration_budget_shares[2]),
+                )
+            )
+
+        rebuild_candidates = _build_objective_rebuild_candidates(problem, incumbent_solution, current_block_order)
+        if rebuild_candidates:
+            loop_candidates.extend(
+                _evaluate_combined_perturbation_candidates(
+                    problem,
+                    candidate_specs=rebuild_candidates,
+                    timelimit=_resolve_search_stage_timelimit(remaining_budget, started_at=started_at, fraction=iteration_budget_shares[3]),
+                )
+            )
+
+        reinsertion_candidates = _build_objective_reinsertion_candidates(problem, incumbent_solution, current_block_order)
+        if reinsertion_candidates:
+            loop_candidates.extend(
+                _evaluate_combined_perturbation_candidates(
+                    problem,
+                    candidate_specs=reinsertion_candidates,
+                    timelimit=_resolve_search_stage_timelimit(remaining_budget, started_at=started_at, fraction=iteration_budget_shares[4]),
+                )
+            )
+
+        partial_reconstruction_candidates = _build_objective_partial_reconstruction_candidates(
+            problem,
+            incumbent_solution,
+            current_block_order,
+        )
+        if partial_reconstruction_candidates:
+            loop_candidates.extend(
+                _evaluate_partial_reconstruction_candidates(
+                    problem,
+                    candidate_specs=partial_reconstruction_candidates,
+                    timelimit=_resolve_search_stage_timelimit(remaining_budget, started_at=started_at, fraction=iteration_budget_shares[5]),
+                )
+            )
+
+        if not loop_candidates:
+            break
+
+        extra_candidates.extend(loop_candidates)
+        combined_pool = [*candidate_solutions, *extra_candidates]
+        best_solution, best_result = _select_best_official_candidate(problem, combined_pool)
+        if best_solution is None or best_result is None:
+            break
+
+        best_key = _official_result_key(best_result)
+        if best_key >= incumbent_key:
+            break
+
+        incumbent_solution = best_solution
+        incumbent_result = best_result
+        incumbent_key = best_key
+        current_block_order = _extract_solution_block_order(incumbent_solution, fallback_order=current_block_order)
+        remaining_budget = max(0.01, timelimit - (time.time() - started_at))
+
+    return extra_candidates
 
 
 def solve_official_constructive_native(
@@ -143,13 +216,12 @@ def solve_official_constructive_native(
     fixed_assignments: dict[int, dict[str, int]] | None = None,
 ) -> dict[str, Any]:
     utils_module = _load_official_utils_module()
-    baseline_module = _load_official_baseline_greedy_module()
 
     bays_data = problem["bays"]
     blocks_data = problem["blocks"]
     weights = problem.get("weights", {})
     bays = [utils_module.Bay.from_dict(bay_data, index) for index, bay_data in enumerate(bays_data)]
-    feasible_bays_by_block = [_feasible_bays_for_block(block_data, bays, baseline_module) for block_data in blocks_data]
+    feasible_bays_by_block = [_feasible_bays_for_block(block_data, bays, utils_module) for block_data in blocks_data]
 
     bay_placed: list[list[Any]] = [[] for _ in bays]
     bay_schedule: list[list[tuple[int, int]]] = [[] for _ in bays]
@@ -219,7 +291,6 @@ def solve_official_constructive_native(
             w3=float(weights.get("w3", 1.0)),
             bay_score_biases=bay_score_biases,
             utils_module=utils_module,
-            baseline_module=baseline_module,
             started_at=started_at,
             timelimit=timelimit,
         )
@@ -237,7 +308,7 @@ def solve_official_constructive_native(
         bay_schedule[bay_id].append((int(placement["entry_time"]), int(placement["exit_time"])))
         bay_loads[bay_id] += float(blocks_data[block_id]["workload"])
 
-    return {"operations": baseline_module._build_operations(assignments)}
+    return {"operations": _build_official_operations(assignments)}
 
 
 def _select_native_official_placement(
@@ -256,7 +327,6 @@ def _select_native_official_placement(
     w3: float,
     bay_score_biases: dict[int, dict[int, float]] | None,
     utils_module: ModuleType,
-    baseline_module: ModuleType,
     started_at: float,
     timelimit: float,
 ) -> dict[str, Any]:
@@ -279,13 +349,13 @@ def _select_native_official_placement(
     for bay_rank, bay_id in enumerate(bay_order):
         bay = bays[bay_id]
         for orient_idx in range(len(block_data["shape"])):
-            block_bbox = baseline_module._block_bbox(block_data, orient_idx)
+            block_bbox = _official_block_bbox(block_data, orient_idx, utils_module)
             block_width = block_bbox[2] - block_bbox[0]
             block_height = block_bbox[3] - block_bbox[1]
             if block_width > bay.width + 1e-6 or block_height > bay.height + 1e-6:
                 continue
 
-            for x, y in baseline_module._candidate_positions(
+            for x, y in _official_candidate_positions(
                 bay.width,
                 bay.height,
                 bay_placed[bay_id],
@@ -298,13 +368,14 @@ def _select_native_official_placement(
                     y=int(y),
                     orient_idx=orient_idx,
                 )
-                entry_time, exit_time = baseline_module._find_earliest_slot(
+                entry_time, exit_time = _official_find_earliest_slot(
                     candidate_block,
                     bay,
                     bay_placed[bay_id],
                     bay_schedule[bay_id],
                     release_time,
                     processing_time,
+                    utils_module,
                 )
                 if entry_time is None or exit_time is None:
                     continue
@@ -312,7 +383,7 @@ def _select_native_official_placement(
                 tardiness = max(0.0, float(exit_time) - due_date)
                 preference_penalty = max_preference - bay_preferences[bay_id]
                 top_y = candidate_block.bounding_rect()[3]
-                score = baseline_module._placement_score(
+                score = _official_placement_score(
                     tardiness,
                     workload,
                     bay_loads,
@@ -353,12 +424,13 @@ def _select_native_official_placement(
     if best_placement is not None:
         return best_placement
 
-    bay_id, x, y, orient_idx, entry_time, exit_time = baseline_module._force_place(
+    bay_id, x, y, orient_idx, entry_time, exit_time = _official_force_place(
         block_id,
         blocks_data,
         bays,
         bay_schedule,
         bay_preferences,
+        utils_module,
     )
     return {
         "block_id": block_id,
@@ -371,11 +443,11 @@ def _select_native_official_placement(
     }
 
 
-def _feasible_bays_for_block(block_data: dict[str, Any], bays: list[Any], baseline_module: ModuleType) -> list[int]:
+def _feasible_bays_for_block(block_data: dict[str, Any], bays: list[Any], utils_module: ModuleType) -> list[int]:
     feasible_bays: list[int] = []
     for bay_id, bay in enumerate(bays):
         for orient_idx in range(len(block_data["shape"])):
-            block_width, block_height = baseline_module._block_size(block_data, orient_idx)
+            block_width, block_height = _official_block_size(block_data, orient_idx, utils_module)
             if block_width <= bay.width + 1e-6 and block_height <= bay.height + 1e-6:
                 feasible_bays.append(bay_id)
                 break
@@ -433,7 +505,6 @@ def _default_official_block_order(problem: dict[str, Any]) -> list[int]:
 def _build_official_search_orders(problem: dict[str, Any]) -> list[list[int]]:
     blocks_data = problem["blocks"]
     utils_module = _load_official_utils_module()
-    baseline_module = _load_official_baseline_greedy_module()
     bays = [utils_module.Bay.from_dict(bay_data, index) for index, bay_data in enumerate(problem["bays"])]
 
     feasible_counts = [
@@ -441,7 +512,7 @@ def _build_official_search_orders(problem: dict[str, Any]) -> list[list[int]]:
             _feasible_bays_for_block(
                 block_data,
                 bays,
-                baseline_module,
+                utils_module,
             )
         )
         for block_data in blocks_data
@@ -653,14 +724,122 @@ def _build_order_neighbors(block_order: list[int]) -> list[list[int]]:
                 seen_orders.add(order_key)
                 neighbors.append(order)
 
+    if len(block_order) >= 4:
+        # Allow interacting tail blocks to move together into the early decision region.
+        bundle_source_indices = sorted(
+            set(range(min(3, len(block_order)))) | set(range(max(0, len(block_order) - 4), len(block_order)))
+        )
+        for source_left, source_right in combinations(bundle_source_indices, 2):
+            source_index_set = {source_left, source_right}
+            selected_blocks = [block_order[source_left], block_order[source_right]]
+            remaining_blocks = [
+                block_id for index, block_id in enumerate(block_order) if index not in source_index_set
+            ]
+            for bundle in permutations(selected_blocks):
+                for target in range(min(4, len(remaining_blocks) + 1)):
+                    order = list(remaining_blocks)
+                    order[target:target] = list(bundle)
+                    order_key = tuple(order)
+                    if order_key not in seen_orders:
+                        seen_orders.add(order_key)
+                        neighbors.append(order)
+
+    if len(block_order) >= 5:
+        # Some official cases only improve when a small dependency chain moves together.
+        bundle_source_indices = sorted(
+            set(range(min(4, len(block_order)))) | set(range(max(0, len(block_order) - 4), len(block_order)))
+        )
+        for source_indices in combinations(bundle_source_indices, 3):
+            source_index_set = set(source_indices)
+            selected_blocks = [block_order[index] for index in source_indices]
+            remaining_blocks = [
+                block_id for index, block_id in enumerate(block_order) if index not in source_index_set
+            ]
+            for bundle in permutations(selected_blocks):
+                for target in range(min(4, len(remaining_blocks) + 1)):
+                    order = list(remaining_blocks)
+                    order[target:target] = list(bundle)
+                    order_key = tuple(order)
+                    if order_key not in seen_orders:
+                        seen_orders.add(order_key)
+                        neighbors.append(order)
+
     return neighbors
+
+
+def _select_promising_order_neighbors(
+    base_order: list[int],
+    neighbor_orders: list[list[int]],
+    *,
+    max_candidates: int | None = None,
+) -> list[list[int]]:
+    if not neighbor_orders:
+        return []
+
+    position_by_block = {block_id: index for index, block_id in enumerate(base_order)}
+    early_window = min(4, len(base_order))
+    candidate_limit = max_candidates if max_candidates is not None else max(24, early_window * 12)
+    candidate_limit = min(candidate_limit, len(neighbor_orders))
+
+    selected_orders: list[list[int]] = []
+    seen_orders: set[tuple[int, ...]] = set()
+
+    def append_order(order: list[int]) -> None:
+        order_key = tuple(order)
+        if order_key in seen_orders:
+            return
+        seen_orders.add(order_key)
+        selected_orders.append(order)
+
+    head_count = min(len(neighbor_orders), max(6, candidate_limit // 2))
+    tail_count = min(len(neighbor_orders) - head_count, candidate_limit - head_count)
+    for order in neighbor_orders[:head_count]:
+        append_order(order)
+    if tail_count > 0:
+        for order in neighbor_orders[-tail_count:]:
+            append_order(order)
+
+    def neighbor_priority(order: list[int]) -> tuple[int, int, int, int, tuple[int, ...]]:
+        promoted_into_window = sum(
+            1
+            for index, block_id in enumerate(order[:early_window])
+            if position_by_block[block_id] >= early_window and position_by_block[block_id] > index
+        )
+        early_origin_sum = sum(position_by_block[block_id] for block_id in order[:early_window])
+        early_promotion = sum(
+            max(0, position_by_block[block_id] - index) for index, block_id in enumerate(order[:early_window])
+        )
+        total_displacement = sum(
+            abs(position_by_block[block_id] - index) for index, block_id in enumerate(order)
+        )
+        return (
+            promoted_into_window,
+            early_origin_sum,
+            early_promotion,
+            total_displacement,
+            tuple(-block_id for block_id in order[:early_window]),
+        )
+
+    if len(selected_orders) < candidate_limit:
+        ranked_orders = sorted(neighbor_orders, key=neighbor_priority, reverse=True)
+        for order in ranked_orders:
+            append_order(order)
+            if len(selected_orders) >= candidate_limit:
+                break
+
+    return selected_orders[:candidate_limit]
+
+
+def _resolve_search_stage_timelimit(timelimit: float, started_at: float, fraction: float) -> float:
+    elapsed = time.time() - started_at
+    remaining = max(0.01, timelimit - elapsed)
+    return max(0.01, remaining * fraction)
 
 
 def _build_bay_bias_candidates(
     problem: dict[str, Any],
     solution: dict[str, Any],
 ) -> list[dict[int, dict[int, float]]]:
-    baseline_module = _load_official_baseline_greedy_module()
     utils_module = _load_official_utils_module()
     bays = [utils_module.Bay.from_dict(bay_data, index) for index, bay_data in enumerate(problem["bays"])]
     assignments = _extract_solution_assignments(solution)
@@ -669,7 +848,7 @@ def _build_bay_bias_candidates(
     seen_biases: set[tuple[tuple[int, tuple[tuple[int, float], ...]], ...]] = set()
     for block_id, assignment in assignments.items():
         block_data = problem["blocks"][block_id]
-        feasible_bays = _feasible_bays_for_block(block_data, bays, baseline_module)
+        feasible_bays = _feasible_bays_for_block(block_data, bays, utils_module)
         assigned_bay = assignment["bay_id"]
         if len(feasible_bays) <= 1:
             continue
@@ -711,7 +890,6 @@ def _build_combined_perturbation_candidates(
     include_load_pressure: bool = True,
     use_objective_contribution: bool = True,
 ) -> list[tuple[list[int], dict[int, dict[int, float]]]]:
-    baseline_module = _load_official_baseline_greedy_module()
     utils_module = _load_official_utils_module()
     bays = [utils_module.Bay.from_dict(bay_data, index) for index, bay_data in enumerate(problem["bays"])]
     assignments = _extract_solution_assignments(solution)
@@ -722,7 +900,7 @@ def _build_combined_perturbation_candidates(
         problem,
         assignments,
         bays=bays,
-        baseline_module=baseline_module,
+        utils_module=utils_module,
         prioritize_incumbent_pressure=prioritize_incumbent_pressure,
         include_load_pressure=include_load_pressure,
         use_objective_contribution=use_objective_contribution,
@@ -731,7 +909,7 @@ def _build_combined_perturbation_candidates(
 
     for block_id in top_ranked_blocks[:3]:
         assignment = assignments[block_id]
-        feasible_bays = _feasible_bays_for_block(problem["blocks"][block_id], bays, baseline_module)
+        feasible_bays = _feasible_bays_for_block(problem["blocks"][block_id], bays, utils_module)
         alternatives = [bay_id for bay_id in feasible_bays if bay_id != assignment["bay_id"]]
         if not alternatives:
             continue
@@ -765,14 +943,14 @@ def _build_combined_perturbation_candidates(
             problem["blocks"][first_block_id],
             assigned_bay=first_assignment["bay_id"],
             bays=bays,
-            baseline_module=baseline_module,
+            utils_module=utils_module,
             limit=1,
         )
         second_alternatives = _top_alternative_bays(
             problem["blocks"][second_block_id],
             assigned_bay=second_assignment["bay_id"],
             bays=bays,
-            baseline_module=baseline_module,
+            utils_module=utils_module,
             limit=1,
         )
         if not first_alternatives or not second_alternatives:
@@ -815,7 +993,6 @@ def _build_objective_rebuild_candidates(
     explore_order_variants: bool = True,
     max_alternative_bays: int = 2,
 ) -> list[tuple[list[int], dict[int, dict[int, float]]]]:
-    baseline_module = _load_official_baseline_greedy_module()
     utils_module = _load_official_utils_module()
     bays = [utils_module.Bay.from_dict(bay_data, index) for index, bay_data in enumerate(problem["bays"])]
     assignments = _extract_solution_assignments(solution)
@@ -828,7 +1005,7 @@ def _build_objective_rebuild_candidates(
 
     candidate_specs: list[tuple[list[int], dict[int, dict[int, float]]]] = []
     seen_specs: set[tuple[tuple[int, ...], tuple[tuple[int, tuple[tuple[int, float], ...]], ...]]] = set()
-    max_focus_count = min(3, len(ranked_blocks))
+    max_focus_count = min(4, len(ranked_blocks))
     for focus_count in range(2, max_focus_count + 1):
         focus_blocks = ranked_blocks[:focus_count]
         order_variants = _build_rebuild_order_variants(
@@ -843,7 +1020,7 @@ def _build_objective_rebuild_candidates(
                 problem["blocks"][block_id],
                 assigned_bay=assignment["bay_id"],
                 bays=bays,
-                baseline_module=baseline_module,
+                utils_module=utils_module,
                 limit=max_alternative_bays,
             )
             if not alternatives:
@@ -889,7 +1066,6 @@ def _build_objective_reinsertion_candidates(
     *,
     explore_staggered_variants: bool = True,
 ) -> list[tuple[list[int], dict[int, dict[int, float]]]]:
-    baseline_module = _load_official_baseline_greedy_module()
     utils_module = _load_official_utils_module()
     bays = [utils_module.Bay.from_dict(bay_data, index) for index, bay_data in enumerate(problem["bays"])]
     assignments = _extract_solution_assignments(solution)
@@ -902,7 +1078,7 @@ def _build_objective_reinsertion_candidates(
 
     candidate_specs: list[tuple[list[int], dict[int, dict[int, float]]]] = []
     seen_specs: set[tuple[tuple[int, ...], tuple[tuple[int, tuple[tuple[int, float], ...]], ...]]] = set()
-    max_focus_count = min(3, len(ranked_blocks))
+    max_focus_count = min(4, len(ranked_blocks))
     for focus_count in range(2, max_focus_count + 1):
         focus_blocks = ranked_blocks[:focus_count]
         order_variants = _build_reinsertion_order_variants(
@@ -917,7 +1093,7 @@ def _build_objective_reinsertion_candidates(
                 problem["blocks"][block_id],
                 assigned_bay=assignment["bay_id"],
                 bays=bays,
-                baseline_module=baseline_module,
+                utils_module=utils_module,
                 limit=2,
             )
             if not alternatives:
@@ -956,6 +1132,211 @@ def _build_objective_reinsertion_candidates(
     return candidate_specs
 
 
+def _build_incumbent_repair_candidates(
+    problem: dict[str, Any],
+    solution: dict[str, Any],
+    block_order: list[int],
+    *,
+    max_focus_count: int = 2,
+    max_candidates: int = 8,
+) -> list[tuple[list[int], dict[int, dict[int, float]], dict[int, dict[str, int]]]]:
+    utils_module = _load_official_utils_module()
+    bays = [utils_module.Bay.from_dict(bay_data, index) for index, bay_data in enumerate(problem["bays"])]
+    assignments = _extract_solution_assignments(solution)
+    if len(assignments) < 2:
+        return []
+
+    bay_load_pressure = _incumbent_bay_load_pressure(problem, assignments, bays)
+    objective_contributions = _incumbent_objective_contributions(problem, assignments, bays, bay_load_pressure)
+    ranked_blocks = sorted(
+        assignments.keys(),
+        key=lambda block_id: (-objective_contributions.get(block_id, 0.0), block_id),
+    )
+    effective_max_focus_count = _resolve_incumbent_repair_focus_count(
+        problem,
+        assignments,
+        objective_contributions,
+        bay_load_pressure,
+        max_focus_count=max_focus_count,
+    )
+    focus_sets: list[list[int]] = [
+        [block_id]
+        for block_id in ranked_blocks[: min(effective_max_focus_count, len(ranked_blocks) - 1)]
+    ]
+    focus_sets.extend(
+        _build_partial_reconstruction_focus_sets(
+            problem,
+            assignments,
+            objective_contributions,
+            bay_load_pressure,
+            use_overlap_clusters=True,
+            use_bay_neighborhoods=True,
+            max_focus_count=max(2, effective_max_focus_count),
+        )
+    )
+
+    scored_specs: list[
+        tuple[
+            float,
+            tuple[list[int], dict[int, dict[int, float]], dict[int, dict[str, int]]],
+        ]
+    ] = []
+    seen_specs: set[
+        tuple[
+            tuple[int, ...],
+            tuple[tuple[int, tuple[tuple[int, float], ...]], ...],
+            tuple[tuple[int, int, int, int, int, int, int], ...],
+        ]
+    ] = set()
+
+    for focus_blocks in focus_sets:
+        fixed_assignments = {
+            block_id: dict(assignment)
+            for block_id, assignment in assignments.items()
+            if block_id not in focus_blocks
+        }
+        if not fixed_assignments:
+            continue
+
+        fixed_key = tuple(
+            sorted(
+                (
+                    block_id,
+                    int(assignment["bay_id"]),
+                    int(assignment["x"]),
+                    int(assignment["y"]),
+                    int(assignment["orient_idx"]),
+                    int(assignment["entry_time"]),
+                    int(assignment["exit_time"]),
+                )
+                for block_id, assignment in fixed_assignments.items()
+            )
+        )
+        focus_score = _partial_reconstruction_focus_score(
+            problem,
+            focus_blocks,
+            assignments,
+            objective_contributions,
+            bay_load_pressure,
+        )
+        order_variants = _build_rebuild_order_variants(
+            block_order,
+            focus_blocks,
+            explore_order_variants=len(focus_blocks) > 1,
+        )
+
+        alternative_options: list[tuple[int, list[int], float, int]] = []
+        for block_id in focus_blocks:
+            assignment = assignments[block_id]
+            alternatives = _top_alternative_bays(
+                problem["blocks"][block_id],
+                assigned_bay=assignment["bay_id"],
+                bays=bays,
+                utils_module=utils_module,
+                limit=2,
+            )
+            contribution = objective_contributions.get(block_id, 0.0)
+            bias_strength = max(1.5, _preference_gap(problem["blocks"][block_id]) + 0.5)
+            bias_strength += min(3.0, contribution / max(1.0, float(problem.get("weights", {}).get("w1", 1.0))))
+            alternative_options.append((block_id, alternatives, bias_strength, assignment["bay_id"]))
+
+        selected_bay_sets = product(
+            *[
+                alternatives if alternatives else [assigned_bay]
+                for _, alternatives, _, assigned_bay in alternative_options
+            ]
+        )
+        for rebuilt_order in order_variants:
+            for selected_bays in selected_bay_sets:
+                biases: dict[int, dict[int, float]] = {}
+                for (block_id, alternatives, bias_strength, assigned_bay), selected_bay in zip(
+                    alternative_options,
+                    selected_bays,
+                    strict=False,
+                ):
+                    if alternatives and selected_bay != assigned_bay:
+                        biases[block_id] = {
+                            assigned_bay: bias_strength,
+                            selected_bay: -bias_strength,
+                        }
+
+                spec_key = (
+                    tuple(rebuilt_order),
+                    tuple(
+                        sorted(
+                            (bid, tuple(sorted((bay, round(delta, 6)) for bay, delta in per_bay.items())))
+                            for bid, per_bay in biases.items()
+                        )
+                    ),
+                    fixed_key,
+                )
+                if spec_key in seen_specs:
+                    continue
+                seen_specs.add(spec_key)
+                scored_specs.append(
+                    (
+                        focus_score + _partial_reconstruction_spec_score(focus_blocks, rebuilt_order, biases),
+                        (rebuilt_order, biases, fixed_assignments),
+                    )
+                )
+
+    scored_specs.sort(key=lambda item: item[0], reverse=True)
+    return [spec for _, spec in scored_specs[:max_candidates]]
+
+
+def _resolve_incumbent_repair_focus_count(
+    problem: dict[str, Any],
+    assignments: dict[int, dict[str, int]],
+    objective_contributions: dict[int, float],
+    bay_load_pressure: dict[int, float],
+    *,
+    max_focus_count: int,
+) -> int:
+    effective_max_focus_count = min(max(1, max_focus_count), max(1, len(assignments) - 1))
+    if effective_max_focus_count >= 3 or len(assignments) < 4:
+        return effective_max_focus_count
+
+    candidate_focus_sets = _build_partial_reconstruction_focus_sets(
+        problem,
+        assignments,
+        objective_contributions,
+        bay_load_pressure,
+        use_overlap_clusters=True,
+        use_bay_neighborhoods=True,
+        max_focus_count=3,
+    )
+    if any(
+        len(focus_blocks) == 3
+        and _is_dense_incumbent_repair_focus(assignments, focus_blocks)
+        for focus_blocks in candidate_focus_sets
+    ):
+        return min(3, len(assignments) - 1)
+
+    return effective_max_focus_count
+
+
+def _is_dense_incumbent_repair_focus(
+    assignments: dict[int, dict[str, int]],
+    focus_blocks: list[int],
+) -> bool:
+    same_bay_pairs = 0
+    overlapping_pairs = 0
+    for left_block_id, right_block_id in combinations(focus_blocks, 2):
+        left_assignment = assignments[left_block_id]
+        right_assignment = assignments[right_block_id]
+        if int(left_assignment["bay_id"]) == int(right_assignment["bay_id"]):
+            same_bay_pairs += 1
+        if _interval_overlap(
+            int(left_assignment["entry_time"]),
+            int(left_assignment.get("exit_time", left_assignment["entry_time"])),
+            int(right_assignment["entry_time"]),
+            int(right_assignment.get("exit_time", right_assignment["entry_time"])),
+        ) > 0:
+            overlapping_pairs += 1
+
+    return same_bay_pairs >= 1 and overlapping_pairs >= 2
+
+
 def _build_objective_partial_reconstruction_candidates(
     problem: dict[str, Any],
     solution: dict[str, Any],
@@ -963,6 +1344,7 @@ def _build_objective_partial_reconstruction_candidates(
     *,
     use_overlap_clusters: bool = True,
     use_bay_neighborhoods: bool = True,
+    max_focus_count: int = 3,
     max_candidates: int | None = 12,
     adaptive_max_candidates: bool = True,
 ) -> list[tuple[list[int], dict[int, dict[int, float]], dict[int, dict[str, int]]]]:
@@ -972,6 +1354,7 @@ def _build_objective_partial_reconstruction_candidates(
         block_order,
         use_overlap_clusters=use_overlap_clusters,
         use_bay_neighborhoods=use_bay_neighborhoods,
+        max_focus_count=max_focus_count,
         max_candidates=max_candidates,
         adaptive_max_candidates=adaptive_max_candidates,
     )
@@ -988,10 +1371,10 @@ def _build_objective_partial_reconstruction_diagnostics(
     *,
     use_overlap_clusters: bool = True,
     use_bay_neighborhoods: bool = True,
+    max_focus_count: int = 3,
     max_candidates: int | None = 12,
     adaptive_max_candidates: bool = True,
 ) -> dict[str, Any]:
-    baseline_module = _load_official_baseline_greedy_module()
     utils_module = _load_official_utils_module()
     bays = [utils_module.Bay.from_dict(bay_data, index) for index, bay_data in enumerate(problem["bays"])]
     assignments = _extract_solution_assignments(solution)
@@ -1004,6 +1387,7 @@ def _build_objective_partial_reconstruction_diagnostics(
         bay_load_pressure,
         use_overlap_clusters=use_overlap_clusters,
         use_bay_neighborhoods=use_bay_neighborhoods,
+        max_focus_count=max_focus_count,
     )
 
     scored_candidate_specs: list[
@@ -1047,7 +1431,7 @@ def _build_objective_partial_reconstruction_diagnostics(
                 problem["blocks"][block_id],
                 assigned_bay=assignment["bay_id"],
                 bays=bays,
-                baseline_module=baseline_module,
+                utils_module=utils_module,
                 limit=2,
             )
             contribution = objective_contributions.get(block_id, 0.0)
@@ -1127,7 +1511,7 @@ def _build_objective_partial_reconstruction_diagnostics(
             scored_candidate_specs,
             fallback_cap=max_candidates,
         )
-    selected_cap = len(scored_candidate_specs) if max_candidates is None else max_candidates
+    selected_cap = len(scored_candidate_specs) if max_candidates is None else min(len(scored_candidate_specs), max_candidates)
     if max_candidates is not None:
         scored_candidate_specs = scored_candidate_specs[:max_candidates]
     candidate_specs = [spec for _, spec in scored_candidate_specs]
@@ -1148,6 +1532,7 @@ def _build_partial_reconstruction_focus_sets(
     *,
     use_overlap_clusters: bool,
     use_bay_neighborhoods: bool,
+    max_focus_count: int,
 ) -> list[list[int]]:
     ranked_blocks = sorted(
         assignments.keys(),
@@ -1158,8 +1543,8 @@ def _build_partial_reconstruction_focus_sets(
 
     focus_sets: list[list[int]] = []
     seen_focus_sets: set[tuple[int, ...]] = set()
-    max_focus_count = min(3, len(ranked_blocks))
-    for focus_count in range(2, max_focus_count + 1):
+    effective_max_focus_count = min(max(2, max_focus_count), len(ranked_blocks))
+    for focus_count in range(2, effective_max_focus_count + 1):
         focus_blocks = ranked_blocks[:focus_count]
         focus_key = tuple(focus_blocks)
         if focus_key not in seen_focus_sets:
@@ -1187,7 +1572,7 @@ def _build_partial_reconstruction_focus_sets(
                     block_id,
                 ),
             )
-            for focus_count in range(2, max_focus_count + 1):
+            for focus_count in range(2, effective_max_focus_count + 1):
                 selected_neighbors = neighbor_candidates[: focus_count - 1]
                 if len(selected_neighbors) != focus_count - 1:
                     continue
@@ -1231,7 +1616,7 @@ def _build_partial_reconstruction_focus_sets(
                     block_id,
                 ),
             )
-            for focus_count in range(2, max_focus_count + 1):
+            for focus_count in range(2, effective_max_focus_count + 1):
                 focus_blocks = neighborhood_candidates[:focus_count]
                 if seed_block not in focus_blocks or len(focus_blocks) != focus_count:
                     continue
@@ -1386,12 +1771,20 @@ def _resolve_partial_reconstruction_candidate_cap(
     tail_score = scores[min(len(scores) - 1, fallback_cap)]
     strength_ratio = top_score / max(1.0, median_score)
     separation = max(0.0, top_score - tail_score)
+    pool_ratio = len(scored_candidate_specs) / max(1, fallback_cap)
+    plateau_band = min(len(scores) - 1, max(3, fallback_cap // 3))
+    wide_plateau = plateau_band > 0 and abs(scores[0] - scores[plateau_band]) <= 1e-9
 
     adaptive_cap = fallback_cap
     if strength_ratio >= 1.6:
         adaptive_cap += 4
     elif strength_ratio <= 1.15 and shrink_permitted:
         adaptive_cap -= 2
+
+    if shrink_permitted and pool_ratio >= 2.5:
+        adaptive_cap -= 2
+        if pool_ratio >= 3.0 and wide_plateau:
+            adaptive_cap -= 2
 
     if separation >= 8.0 and shrink_permitted:
         adaptive_cap -= 2
@@ -1413,7 +1806,7 @@ def _rank_combined_perturbation_blocks(
     assignments: dict[int, dict[str, int]],
     *,
     bays: list[Any],
-    baseline_module: ModuleType,
+    utils_module: ModuleType,
     prioritize_incumbent_pressure: bool,
     include_load_pressure: bool,
     use_objective_contribution: bool,
@@ -1426,7 +1819,7 @@ def _rank_combined_perturbation_blocks(
             -_combined_perturbation_priority(
                 problem["blocks"][block_id],
                 assignments[block_id],
-                feasible_bay_count=len(_feasible_bays_for_block(problem["blocks"][block_id], bays, baseline_module)),
+                feasible_bay_count=len(_feasible_bays_for_block(problem["blocks"][block_id], bays, utils_module)),
                 prioritize_incumbent_pressure=prioritize_incumbent_pressure,
                 load_pressure=bay_load_pressure.get(int(assignments[block_id]["bay_id"]), 0.0) if include_load_pressure else 0.0,
                 objective_contribution=objective_contributions.get(block_id, 0.0),
@@ -1522,14 +1915,218 @@ def _top_alternative_bays(
     *,
     assigned_bay: int,
     bays: list[Any],
-    baseline_module: ModuleType,
+    utils_module: ModuleType,
     limit: int,
 ) -> list[int]:
-    feasible_bays = _feasible_bays_for_block(block_data, bays, baseline_module)
+    feasible_bays = _feasible_bays_for_block(block_data, bays, utils_module)
     return sorted(
         (bay_id for bay_id in feasible_bays if bay_id != assigned_bay),
         key=lambda bay_id: (-block_data["bay_preferences"][bay_id], bay_id),
     )[:limit]
+
+
+def _official_block_bbox(
+    block_data: dict[str, Any],
+    orient_idx: int,
+    utils_module: ModuleType,
+) -> tuple[float, float, float, float]:
+    raw_layers = block_data["shape"][orient_idx]["layers"]
+    layers = utils_module._resolve_layers(raw_layers)
+    if not layers:
+        return (0.0, 0.0, 1.0, 1.0)
+    all_vertices = [vertex for layer in layers for vertex in layer]
+    return utils_module._bounding_box(all_vertices)
+
+
+def _official_block_size(
+    block_data: dict[str, Any],
+    orient_idx: int,
+    utils_module: ModuleType,
+) -> tuple[float, float]:
+    left, bottom, right, top = _official_block_bbox(block_data, orient_idx, utils_module)
+    return (right - left, top - bottom)
+
+
+def _official_time_overlaps(a_entry: int, a_exit: int, b_entry: int, b_exit: int) -> bool:
+    return a_entry < b_exit and b_entry < a_exit
+
+
+def _official_candidate_positions(
+    bay_width: float,
+    bay_height: float,
+    placed_blocks: list[Any],
+    block_bounds: tuple[float, float, float, float],
+) -> list[tuple[int, int]]:
+    left, bottom, right, top = block_bounds
+    xs = {max(0, math.ceil(-left))}
+    ys = {max(0, math.ceil(-bottom))}
+    for placed_block in placed_blocks:
+        placed_left, placed_bottom, placed_right, placed_top = placed_block.bounding_rect()
+        xs.add(math.ceil(placed_right - left))
+        ys.add(math.ceil(placed_top - bottom))
+
+    candidates: list[tuple[int, int]] = []
+    for x in sorted(xs):
+        for y in sorted(ys):
+            if x + right <= bay_width + 1e-6 and y + top <= bay_height + 1e-6:
+                candidates.append((int(x), int(y)))
+    return candidates
+
+
+def _official_placement_score(
+    tardiness: float,
+    workload: float,
+    bay_loads: list[float],
+    bay_id: int,
+    preference_penalty: float,
+    bay_weights: list[float],
+    w1: float,
+    w2: float,
+    w3: float,
+    *,
+    top_y: float = 0.0,
+    w4: float = 1e-4,
+) -> float:
+    new_load = bay_loads[bay_id] + workload
+    imbalance = max(
+        (
+            abs(bay_weights[bay_id] * new_load - bay_weights[other_bay_id] * bay_loads[other_bay_id])
+            for other_bay_id in range(len(bay_loads))
+            if other_bay_id != bay_id
+        ),
+        default=0.0,
+    )
+    return (w1 * tardiness) + (w2 * imbalance) + (w3 * preference_penalty) + (w4 * top_y)
+
+
+def _official_find_earliest_slot(
+    new_block: Any,
+    bay: Any,
+    placed_in_bay: list[Any],
+    schedule_in_bay: list[tuple[int, int]],
+    release_time: int,
+    processing_time: int,
+    utils_module: ModuleType,
+) -> tuple[int | None, int | None]:
+    candidate_entries = sorted({release_time} | {exit_time for _, exit_time in schedule_in_bay})
+
+    for entry_time in candidate_entries:
+        entry_time = max(release_time, entry_time)
+        exit_time = entry_time + processing_time
+
+        present_at_entry = [
+            placed_block
+            for placed_block, (start_time, end_time) in zip(placed_in_bay, schedule_in_bay)
+            if start_time <= entry_time < end_time
+        ]
+        if utils_module.check_entry(bay, present_at_entry, new_block, fast=True):
+            continue
+
+        present_at_exit = [new_block] + [
+            placed_block
+            for placed_block, (start_time, end_time) in zip(placed_in_bay, schedule_in_bay)
+            if start_time < exit_time < end_time
+        ]
+        if utils_module.check_exit(bay, present_at_exit, new_block, fast=True):
+            continue
+
+        blocked_by_overlap = False
+        for placed_block, (start_time, end_time) in zip(placed_in_bay, schedule_in_bay):
+            if start_time <= entry_time or end_time >= exit_time:
+                continue
+            if not _official_time_overlaps(entry_time, exit_time, start_time, end_time):
+                continue
+            if utils_module.check_collisions(bay, [new_block, placed_block]):
+                blocked_by_overlap = True
+                break
+        if blocked_by_overlap:
+            continue
+
+        return entry_time, exit_time
+
+    return None, None
+
+
+def _official_empty_bay_entry(schedule_in_bay: list[tuple[int, int]], release_time: int, processing_time: int) -> int:
+    entry_time = int(release_time)
+    changed = True
+    while changed:
+        changed = False
+        exit_time = entry_time + processing_time
+        for start_time, end_time in schedule_in_bay:
+            if _official_time_overlaps(entry_time, exit_time, start_time, end_time):
+                entry_time = max(entry_time, end_time)
+                changed = True
+    return entry_time
+
+
+def _official_force_place(
+    block_id: int,
+    blocks_data: list[dict[str, Any]],
+    bays: list[Any],
+    bay_schedule: list[list[tuple[int, int]]],
+    preferences: list[float],
+    utils_module: ModuleType,
+) -> tuple[int, int, int, int, int, int]:
+    block_data = blocks_data[block_id]
+    release_time = int(block_data["release_time"])
+    processing_time = int(block_data["processing_time"])
+
+    for bay_id in sorted(range(len(bays)), key=lambda candidate_bay_id: preferences[candidate_bay_id], reverse=True):
+        bay = bays[bay_id]
+        for orient_idx in range(len(block_data["shape"])):
+            block_width, block_height = _official_block_size(block_data, orient_idx, utils_module)
+            if block_width <= bay.width + 1e-6 and block_height <= bay.height + 1e-6:
+                left, bottom, _, _ = _official_block_bbox(block_data, orient_idx, utils_module)
+                x = max(0, math.ceil(-left))
+                y = max(0, math.ceil(-bottom))
+                entry_time = _official_empty_bay_entry(bay_schedule[bay_id], release_time, processing_time)
+                return (bay_id, x, y, orient_idx, entry_time, entry_time + processing_time)
+
+    fallback_bay_id = max(range(len(bays)), key=lambda candidate_bay_id: preferences[candidate_bay_id])
+    left, bottom, _, _ = _official_block_bbox(block_data, 0, utils_module)
+    x = max(0, math.ceil(-left))
+    y = max(0, math.ceil(-bottom))
+    entry_time = _official_empty_bay_entry(bay_schedule[fallback_bay_id], release_time, processing_time)
+    return (fallback_bay_id, x, y, 0, entry_time, entry_time + processing_time)
+
+
+def _build_official_operations(assignments: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+    operations_by_time: dict[int, list[tuple[int, dict[str, Any]]]] = {}
+    for assignment in assignments:
+        block_id = int(assignment["block_id"])
+        bay_id = int(assignment["bay_id"])
+        entry_time = int(assignment["entry_time"])
+        exit_time = int(assignment["exit_time"])
+
+        operations_by_time.setdefault(exit_time, []).append(
+            (
+                0,
+                {
+                    "type": "EXIT",
+                    "block_id": block_id,
+                    "bay_id": bay_id,
+                },
+            )
+        )
+        operations_by_time.setdefault(entry_time, []).append(
+            (
+                1,
+                {
+                    "type": "ENTRY",
+                    "block_id": block_id,
+                    "bay_id": bay_id,
+                    "x": int(assignment["x"]),
+                    "y": int(assignment["y"]),
+                    "orient_idx": int(assignment["orient_idx"]),
+                },
+            )
+        )
+
+    return {
+        str(time_key): [operation for _, operation in sorted(operations, key=lambda item: (item[0], item[1]["block_id"]))]
+        for time_key, operations in sorted(operations_by_time.items())
+    }
 
 
 def _promote_blocks_in_order(block_order: list[int], block_ids: list[int]) -> list[int]:
@@ -1644,8 +2241,43 @@ def _extract_solution_assignments(solution: dict[str, Any]) -> dict[int, dict[st
     return assignments
 
 
+def _extract_solution_block_order(
+    solution: dict[str, Any],
+    *,
+    fallback_order: list[int],
+) -> list[int]:
+    assignments = _extract_solution_assignments(solution)
+    if not assignments:
+        return list(fallback_order)
+
+    assigned_block_ids = set(assignments)
+    ordered_block_ids = [
+        block_id
+        for block_id, _ in sorted(
+            assignments.items(),
+            key=lambda item: (
+                int(item[1].get("entry_time", 0)),
+                int(item[1].get("exit_time", item[1].get("entry_time", 0))),
+                int(item[0]),
+            ),
+        )
+    ]
+    ordered_block_ids.extend(block_id for block_id in fallback_order if block_id not in assigned_block_ids)
+    return ordered_block_ids
+
+
 @lru_cache(maxsize=1)
 def _load_official_utils_module() -> ModuleType:
+    existing_module = sys.modules.get("utils")
+    if existing_module is not None:
+        return existing_module
+
+    with contextlib.suppress(ModuleNotFoundError):
+        import utils as utils_module
+
+        sys.modules["utils"] = utils_module
+        return utils_module
+
     utils_path = _official_utils_path()
     if not utils_path.exists():
         raise OfficialSupportError(

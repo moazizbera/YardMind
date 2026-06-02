@@ -1,0 +1,127 @@
+{
+  "yard": {
+    "width": 28,
+    "height": 24,
+    "min_clearance": 1,
+    "zones": [
+      "north",
+      "south",
+      "east",
+      "west"
+    ]
+  },
+  "blocks": [
+    {
+      "id": "A1",
+      "width": 5,
+      "height": 4,
+      "release_time": 0,
+      "due_time": 7,
+      "priority": 3
+    },
+    {
+      "id": "A2",
+      "width": 4,
+      "height": 3,
+      "release_time": 2,
+      "due_time": 9,
+      "priority": 2
+    },
+    {
+      "id": "A3",
+      "width": 6,
+      "height": 4,
+      "release_time": 5,
+      "due_time": 13,
+      "priority": 1
+    },
+    {
+      "id": "B1",
+      "width": 3,
+      "height": 3,
+      "release_time": 1,
+      "due_time": 6,
+      "priority": 2
+    },
+    {
+      "id": "B2",
+      "width": 5,
+      "height": 3,
+      "release_time": 8,
+      "due_time": 16,
+      "priority": 3
+    },
+    {
+      "id": "B3",
+      "width": 4,
+      "height": 4,
+      "release_time": 3,
+      "due_time": 11,
+      "priority": 1
+    },
+    {
+      "id": "C1",
+      "width": 3,
+      "height": 5,
+      "release_time": 0,
+      "due_time": 8,
+      "priority": 2
+    },
+    {
+      "id": "C2",
+      "width": 6,
+      "height": 3,
+      "release_time": 10,
+      "due_time": 18,
+      "priority": 0
+    },
+    {
+      "id": "C3",
+      "width": 4,
+      "height": 3,
+      "release_time": 6,
+      "due_time": 14,
+      "priority": 2
+    },
+    {
+      "id": "D1",
+      "width": 5,
+      "height": 4,
+      "release_time": 4,
+      "due_time": 12,
+      "priority": 3
+    },
+    {
+      "id": "D2",
+      "width": 3,
+      "height": 3,
+      "release_time": 12,
+      "due_time": 20,
+      "priority": 1
+    },
+    {
+      "id": "D3",
+      "width": 4,
+      "height": 5,
+      "release_time": 7,
+      "due_time": 15,
+      "priority": 2
+    },
+    {
+      "id": "E1",
+      "width": 5,
+      "height": 3,
+      "release_time": 14,
+      "due_time": 22,
+      "priority": 0
+    },
+    {
+      "id": "E2",
+      "width": 3,
+      "height": 4,
+      "release_time": 9,
+      "due_time": 17,
+      "priority": 3
+    }
+  ]
+}

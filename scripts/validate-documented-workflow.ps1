@@ -16,6 +16,14 @@ python -m yardmind.demo --instance examples/sample-instance.json --output artifa
 python scripts/generate_official_baseline_artifact.py
 python scripts/compare_official_constructive_variants.py
 
+Write-Host "Validating documented frontend workflow..."
+Push-Location web
+npm install
+npm run build
+Pop-Location
+
+./scripts/capture-react-demo.ps1
+
 Write-Host "Generating chart-ready artifacts..."
 python scripts/generate_chart_ready_artifacts.py
 

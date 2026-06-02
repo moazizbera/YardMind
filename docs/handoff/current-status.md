@@ -30,15 +30,18 @@ YardMind is a Python-based optimization project for OGC 2026 focused on retrieva
 - validates official solution JSON files against the released baseline `utils.check_feasibility(...)` path during official inspect mode
 - runs the released official baseline greedy algorithm for `--input-format official --mode constructive`, validates its returned operations in-repo, and can persist the official solution JSON through `--output`
 - official constructive CLI now also exposes an explicit `--official-constructive-variant delegated|native` switch so the first YardMind-native heuristic can be exercised without using only comparison scripts
-- official search CLI now runs a first official portfolio search: it evaluates the delegated baseline constructive path plus multiple YardMind-native constructive orderings, then refines the best native candidate with nearby order perturbations and targeted bay-bias perturbations before returning the best feasible objective and optionally persisting the chosen operations JSON through `--output`
+- official search CLI now runs an official portfolio plus incumbent-refinement loop: it evaluates the delegated baseline constructive path plus multiple YardMind-native constructive orderings, then repeatedly rebuilds perturbation neighborhoods around the current best feasible incumbent using nearby order changes, bay-bias perturbations, neighbor-aware incumbent repair, objective-driven rebuilds, reinsertion candidates, and partial reconstruction before returning the best feasible objective and optionally persisting the chosen operations JSON through `--output`
+- official search now also includes a dedicated direct incumbent repair family that removes and reinserts 1-2 high-impact blocks against fixed incumbent assignments, and can escalate to 3-block dense-cluster repairs when overlap-cluster and bay-neighborhood pressure is strong before escalating to broader reconstruction neighborhoods
+- official partial reconstruction now also supports opt-in 4-block focus neighborhoods for denser incumbent clusters, while the default search path keeps the smaller neighborhood cap for stability on tight time budgets
 - official benchmark CLI now compares delegated-versus-native constructive runs on official instances, printing feasibility, objective, and runtime side by side and optionally writing the JSON summary through `--output`
 - the native official heuristic now scores urgency-weighted future bay scarcity plus future window overlap, preserving bays that later, tighter-slack blocks are more dependent on and avoiding those bays during the windows they are likely to need when the current block has other feasible options
 - includes `scripts/generate_official_baseline_artifact.py` to regenerate and validate a reproducible official baseline artifact under `artifacts/official/`
 - includes `scripts/compare_official_constructive_variants.py` to write delegated-versus-native official constructive artifacts and a summary with runtime plus objective data under `artifacts/official/comparison/`
 - includes a lightweight presentation layer via `python -m yardmind.demo`, which generates a browser-viewable static demo page under `artifacts/demo/index.html` for the development solver path plus the current official delegated-versus-native constructive comparison summary and official bay placement snapshots
 - includes `scripts/open-demo.ps1` as the one-command demo launcher; it rebuilds `artifacts/demo/index.html` with `PYTHONPATH=src` and opens the page unless `-NoOpen` is supplied
+- includes `scripts/open-react-demo.ps1`, `scripts/open-judge-pack.ps1`, and `scripts/open-submission-rehearsal.ps1` with an optional `-Intro` switch so the animated splash can play before a direct product surface such as the judge sequence or replay stage
 - validates block placement against yard bounds, time windows, space-time overlap, and optional yard-level minimum clearance
-- official regression fixtures now cover released-checker failure modes for Stage 1, Stage 2, Stage 3, and Stage 5; a pure Stage 4 collision fixture is still pending a richer official geometry case
+- official regression fixtures now cover released-checker failure modes for Stage 1, Stage 2, Stage 3, and Stage 5; inspection of the released checker shows ordinary overlap collisions are classified at Stage 2 before Stage 4, so a standalone Stage 4 fixture is not currently treated as a blocker
 - constructs a feasible solution by enumerating candidate coordinates
 - scores candidates using compactness, edge distance, urgency, priority, and local congestion
 - prints a detailed objective breakdown for constructive and search solves
@@ -54,7 +57,7 @@ YardMind is a Python-based optimization project for OGC 2026 focused on retrieva
 - `examples/realistic-improvement-instance.json` exists as a denser development case where seeded search improves over constructive across repeated runs
 - benchmark ablation coverage now includes a direct comparison showing the bounded exact repair mix outperforms the heuristic-only repair mix on the broader realistic development case
 - search and benchmark modes now support an optional wall-clock time limit for timeout-safe execution
-- the technical report draft now includes the constructive heuristic, search operators, acceptance logic, exact-repair ablation, runtime notes, and a worked placement example
+- the main technical report now lives at `docs/report/technical-report.md`, while the older draft remains at `docs/report/technical-report-outline.md`
 - the final presentation outline now includes dense-baseline and improved-layout examples, a convergence trace, a system architecture slide, and an engineering-robustness slide
 - chart-ready CSV and JSON artifacts for the report and presentation can now be regenerated with `python scripts/generate_chart_ready_artifacts.py`
 - returns a feasible baseline solution and a feasible local-search solution on the sample instance
@@ -94,9 +97,9 @@ python scripts/generate_chart_ready_artifacts.py
 ## Current Limitations
 
 - development solve modes still use the temporary rectangle-based schema and objective logic
-- official OGC 2026 loading currently supports inspection, feasibility validation, delegated constructive, native constructive comparison benchmarking, and a first official search portfolio that picks the best feasible solution among the currently available constructive variants and native orderings; a true official neighborhood-search layer is still missing
+- official OGC 2026 loading currently supports inspection, feasibility validation, delegated constructive, native constructive comparison benchmarking, and a bounded incumbent-refinement search over the current constructive and perturbation families, including neighbor-aware incumbent repair; a true direct assignment destroy/repair neighborhood-search layer is still missing
 - the repo now also includes a first YardMind-native official constructive heuristic exposed through the CLI for comparison on the public official sample, but it should still be treated as an early baseline rather than the main official solver path
-- pure Stage 4 official collision coverage is still missing; the current repo now isolates Stage 1, 2, 3, and 5 against the released checker, but Stage 4 needs a richer official fixture that bypasses earlier entry or exit failures without becoming misleading
+- pure Stage 4 official collision coverage remains unverified as a standalone checker outcome; the released checker's Stage 2 entry logic already catches ordinary same-bay overlap collisions before Stage 4, so any future Stage 4 fixture needs to demonstrate behavior not already dominated by entry or exit feasibility
 - no yard zoning constraints beyond simple metadata
 - no access-lane or retrieval-path hard constraints yet
 - local search is still heuristic and lightweight; it does not yet use reheating or external exact-solver backends such as CP-SAT
@@ -105,4 +108,4 @@ python scripts/generate_chart_ready_artifacts.py
 
 ## Most Important Next Step
 
-Extend the current official search portfolio into a true official improvement loop that perturbs and repairs official assignments directly instead of only selecting among constructive candidates.
+Extend the current official incumbent-refinement loop into a true official improvement loop that perturbs and repairs incumbent official assignments directly instead of repeatedly rebuilding them through constructive reruns.

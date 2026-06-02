@@ -1,5 +1,5 @@
 param(
-    [string]$Instance = "examples/sample-instance.json",
+    [string]$Instance = "examples/realistic-improvement-instance.json",
     [string]$Output = "artifacts/demo/index.html",
     [int]$Iterations = 8,
     [int]$Seed = 11,

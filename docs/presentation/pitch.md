@@ -18,6 +18,12 @@ The current prototype already exposes interpretable objective terms and reproduc
 - local exact repair improves difficult neighborhoods without solving the full instance exactly
 - anytime behavior makes the solver robust under runtime limits
 
+## Judge Hooks
+
+- official proof is visible: stage, replay, runtime, and objective terms are shown instead of hidden behind a single score
+- measurable lift is explicit: the demo shows search lift and official delta versus the delegated baseline
+- the engineering is auditable: guided judge flow, equation surfaces, and on-demand trace make the system feel reliable under scrutiny
+
 ## Demo Narrative
 
 1. Show a dense but fragile layout.

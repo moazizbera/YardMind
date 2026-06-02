@@ -6,6 +6,7 @@ from time import perf_counter
 
 from yardmind.benchmark import run_benchmark, write_benchmark_summary, write_chart_artifacts
 from yardmind.loader import load_instance
+from yardmind.official_compare import benchmark_official_constructive_comparison
 from yardmind.solver.constructive import ConstructiveSolver
 from yardmind.solver.feasibility import FeasibilityChecker
 from yardmind.solver.local_search import (
@@ -50,6 +51,35 @@ def main() -> None:
     write_chart_artifacts(default_summary, default_dir)
     write_benchmark_summary(heuristic_summary, heuristic_dir / "summary.json")
     write_chart_artifacts(heuristic_summary, heuristic_dir)
+    benchmark_official_constructive_comparison(
+        repo_root=repo_root,
+        output_root=artifacts_root / "official_default",
+        runs=6,
+        timelimit=5.0,
+    )
+    benchmark_official_constructive_comparison(
+        repo_root=repo_root,
+        output_root=artifacts_root / "official_search_proof",
+        instance_path=repo_root / "examples" / "official-search-proof-instance.json",
+        runs=6,
+        timelimit=1.0,
+    )
+    benchmark_official_constructive_comparison(
+        repo_root=repo_root,
+        output_root=artifacts_root / "official_search_quality",
+        instance_path=repo_root / "examples" / "official-search-quality-instance.json",
+        runs=6,
+        timelimit=1.0,
+    )
+
+    _write_official_case_summary_csv(
+        artifacts_root / "official_search_case_summary.csv",
+        [
+            artifacts_root / "official_default" / "summary.json",
+            artifacts_root / "official_search_proof" / "summary.json",
+            artifacts_root / "official_search_quality" / "summary.json",
+        ],
+    )
 
     _write_ablation_csv(
         artifacts_root / "repair_ablation_comparison.csv",
@@ -168,6 +198,52 @@ def _write_presentation_artifacts(
                         "retrieval_risk_penalty": state.objective_breakdown.retrieval_risk_penalty,
                     }
                 )
+
+
+def _write_official_case_summary_csv(output_path: Path, summary_paths: list[Path]) -> None:
+    rows: list[dict[str, object]] = []
+    for summary_path in summary_paths:
+        if not summary_path.exists():
+            continue
+
+        import json
+
+        payload = json.loads(summary_path.read_text(encoding="utf-8"))
+        summary = payload.get("summary", {})
+        rows.append(
+            {
+                "instance": payload.get("instance", summary_path.parent.name),
+                "runs": summary.get("runs"),
+                "delegated_feasible_runs": summary.get("delegated_feasible_runs"),
+                "native_feasible_runs": summary.get("native_feasible_runs"),
+                "search_feasible_runs": summary.get("search_feasible_runs"),
+                "delegated_objective_mean": summary.get("delegated_objective_mean"),
+                "native_objective_mean": summary.get("native_objective_mean"),
+                "search_objective_mean": summary.get("search_objective_mean"),
+                "search_vs_delegated_delta_mean": summary.get("search_vs_delegated_delta_mean"),
+                "search_vs_native_delta_mean": summary.get("search_vs_native_delta_mean"),
+            }
+        )
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with output_path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(
+            handle,
+            fieldnames=[
+                "instance",
+                "runs",
+                "delegated_feasible_runs",
+                "native_feasible_runs",
+                "search_feasible_runs",
+                "delegated_objective_mean",
+                "native_objective_mean",
+                "search_objective_mean",
+                "search_vs_delegated_delta_mean",
+                "search_vs_native_delta_mean",
+            ],
+        )
+        writer.writeheader()
+        writer.writerows(rows)
 
 
 if __name__ == "__main__":

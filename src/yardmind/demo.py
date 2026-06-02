@@ -19,7 +19,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--instance",
         type=Path,
-        default=Path("examples/sample-instance.json"),
+        default=Path("examples/realistic-improvement-instance.json"),
         help="Development instance to visualize.",
     )
     parser.add_argument(
@@ -60,6 +60,7 @@ def generate_demo_report(
     search_state = search_solver.solve(instance)
     official_error: str | None = None
     official_summary: dict[str, object] | None = None
+    report_evidence = _load_report_evidence(repo_root)
 
     try:
         official_summary = generate_official_constructive_comparison(
@@ -81,6 +82,7 @@ def generate_demo_report(
         diagnostics=search_solver.last_diagnostics,
         official_summary=official_summary,
         official_error=official_error,
+        report_evidence=report_evidence,
     )
     demo_snapshot = _build_demo_snapshot(
         instance_name=instance.name or instance_path.stem,
@@ -94,6 +96,7 @@ def generate_demo_report(
         diagnostics=search_solver.last_diagnostics,
         official_summary=official_summary,
         official_error=official_error,
+        report_evidence=report_evidence,
     )
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -121,6 +124,7 @@ def _build_demo_snapshot(
     diagnostics,
     official_summary: dict[str, object] | None,
     official_error: str | None,
+    report_evidence: dict[str, object] | None,
 ) -> dict[str, object]:
     return {
         "instance_name": instance_name,
@@ -145,11 +149,106 @@ def _build_demo_snapshot(
         },
         "constructive": _serialize_solution_state(constructive_state),
         "search_solution": _serialize_solution_state(search_state),
+        "allocation_trace": _build_allocation_trace(constructive_state, search_state),
         "official": {
             "summary": official_summary,
             "error": official_error,
         },
+        "report_evidence": report_evidence,
     }
+
+
+def _load_report_evidence(repo_root: Path) -> dict[str, object] | None:
+    development_evidence = _load_development_report_evidence(repo_root)
+    official_evidence = _load_official_report_evidence(repo_root)
+    if development_evidence is None and official_evidence is None:
+        return None
+
+    return {
+        "development": development_evidence,
+        "official": official_evidence,
+    }
+
+
+def _load_development_report_evidence(repo_root: Path) -> dict[str, object] | None:
+    summary = _read_summary_block(repo_root / "artifacts" / "report" / "realistic_default" / "summary.json")
+    if summary is None:
+        return None
+
+    return {
+        "runs": summary.get("runs"),
+        "constructive_mean": summary.get("constructive_mean"),
+        "search_mean": summary.get("search_mean"),
+        "search_best": summary.get("search_best"),
+        "improved_runs": summary.get("improved_runs"),
+    }
+
+
+def _load_official_report_evidence(repo_root: Path) -> dict[str, object] | None:
+    public_sample = _load_official_report_summary(repo_root / "artifacts" / "report" / "official_default" / "summary.json")
+    proof_case = _load_official_report_summary(repo_root / "artifacts" / "report" / "official_search_proof" / "summary.json")
+    quality_case = _load_official_report_summary(repo_root / "artifacts" / "report" / "official_search_quality" / "summary.json")
+    if public_sample is None and proof_case is None and quality_case is None:
+        return None
+
+    return {
+        "public_sample": public_sample,
+        "proof_case": proof_case,
+        "quality_case": quality_case,
+    }
+
+
+def _load_official_report_summary(summary_path: Path) -> dict[str, object] | None:
+    payload = _read_json_payload(summary_path)
+    if payload is None:
+        return None
+
+    summary = payload.get("summary")
+    if not isinstance(summary, dict):
+        return None
+
+    return {
+        "instance": payload.get("instance"),
+        "runs": summary.get("runs"),
+        "delegated_feasible_runs": summary.get("delegated_feasible_runs"),
+        "native_feasible_runs": summary.get("native_feasible_runs"),
+        "search_feasible_runs": summary.get("search_feasible_runs"),
+        "delegated_objective_mean": summary.get("delegated_objective_mean"),
+        "native_objective_mean": summary.get("native_objective_mean"),
+        "search_objective_mean": summary.get("search_objective_mean"),
+        "objective_delta_mean": summary.get("objective_delta_mean"),
+        "search_vs_delegated_delta_mean": summary.get("search_vs_delegated_delta_mean"),
+        "search_vs_native_delta_mean": summary.get("search_vs_native_delta_mean"),
+        "delegated_runtime_mean": summary.get("delegated_runtime_mean"),
+        "native_runtime_mean": summary.get("native_runtime_mean"),
+        "search_runtime_mean": summary.get("search_runtime_mean"),
+        "native_better_or_equal_runs": summary.get("native_better_or_equal_runs"),
+        "native_faster_runs": summary.get("native_faster_runs"),
+        "search_better_or_equal_than_delegated_runs": summary.get("search_better_or_equal_than_delegated_runs"),
+        "search_better_or_equal_than_native_runs": summary.get("search_better_or_equal_than_native_runs"),
+        "search_faster_than_delegated_runs": summary.get("search_faster_than_delegated_runs"),
+    }
+
+
+def _read_summary_block(summary_path: Path) -> dict[str, object] | None:
+    payload = _read_json_payload(summary_path)
+    if payload is None:
+        return None
+
+    summary = payload.get("summary")
+    return summary if isinstance(summary, dict) else None
+
+
+def _read_json_payload(summary_path: Path) -> dict[str, object] | None:
+    if not summary_path.exists():
+        return None
+
+    try:
+        payload = json.loads(summary_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+
+    return payload if isinstance(payload, dict) else None
 
 
 def _serialize_solution_state(state: SolutionState) -> dict[str, object]:
@@ -177,6 +276,91 @@ def _serialize_solution_state(state: SolutionState) -> dict[str, object]:
     }
 
 
+def _build_allocation_trace(constructive_state: SolutionState, search_state: SolutionState) -> list[dict[str, object]]:
+    constructive_placements = _build_state_placements(constructive_state)
+    search_placements = _build_state_placements(search_state)
+    constructive_by_id = {placement["block_id"]: placement for placement in constructive_placements}
+
+    core_center_x = sum(float(placement["x"]) + float(placement["width"]) / 2.0 for placement in search_placements) / max(1, len(search_placements))
+    core_center_y = sum(float(placement["y"]) + float(placement["height"]) / 2.0 for placement in search_placements) / max(1, len(search_placements))
+
+    rows: list[dict[str, object]] = []
+    for placement in search_placements:
+        original = constructive_by_id.get(str(placement["block_id"]))
+        if original is None:
+            continue
+
+        moved = int(original["x"]) != int(placement["x"]) or int(original["y"]) != int(placement["y"])
+        access_delta = int(placement["x"]) - int(original["x"])
+        conflict_delta = _overlap_count(original, constructive_placements) - _overlap_count(placement, search_placements)
+        original_core_distance = abs((int(original["x"]) + int(original["width"]) / 2.0) - core_center_x) + abs((int(original["y"]) + int(original["height"]) / 2.0) - core_center_y)
+        current_core_distance = abs((int(placement["x"]) + int(placement["width"]) / 2.0) - core_center_x) + abs((int(placement["y"]) + int(placement["height"]) / 2.0) - core_center_y)
+        core_delta = original_core_distance - current_core_distance
+        signal_score = access_delta * 0.7 + conflict_delta * 1.2 + core_delta * 0.25
+
+        if moved:
+            if conflict_delta > 0:
+                reason = "reduced overlapping pressure in a busy zone"
+            elif access_delta > 0:
+                reason = "opened more access-edge space for future retrieval"
+            elif core_delta > 0:
+                reason = "tightened the storage core without adding conflict"
+            else:
+                reason = "repositioned to maintain a more stable yard shape"
+        elif signal_score >= 0:
+            reason = "kept stable because the constructive placement already aligned with the target structure"
+        else:
+            reason = "kept stable because moving it would not improve the local structure"
+
+        rows.append(
+            {
+                "block_id": placement["block_id"],
+                "from_x": original["x"],
+                "from_y": original["y"],
+                "to_x": placement["x"],
+                "to_y": placement["y"],
+                "moved": moved,
+                "access_delta": access_delta,
+                "conflict_delta": conflict_delta,
+                "core_delta": core_delta,
+                "signal_score": signal_score,
+                "reason": reason,
+            }
+        )
+
+    return rows
+
+
+def _build_state_placements(state: SolutionState) -> list[dict[str, object]]:
+    return [
+        {
+            "block_id": placement.block_id,
+            "x": placement.x,
+            "y": placement.y,
+            "start_time": placement.start_time,
+            "end_time": placement.end_time,
+            "width": state.instance.block_by_id(placement.block_id).rotated_dimensions(placement.rotation)[0],
+            "height": state.instance.block_by_id(placement.block_id).rotated_dimensions(placement.rotation)[1],
+        }
+        for placement in state.placements
+    ]
+
+
+def _overlap_count(target: dict[str, object], placements: list[dict[str, object]]) -> int:
+    count = 0
+    for candidate in placements:
+        if candidate["block_id"] == target["block_id"]:
+            continue
+
+        time_overlap = int(target["start_time"]) < int(candidate["end_time"]) and int(candidate["start_time"]) < int(target["end_time"])
+        x_overlap = int(target["x"]) < int(candidate["x"]) + int(candidate["width"]) and int(candidate["x"]) < int(target["x"]) + int(target["width"])
+        y_overlap = int(target["y"]) < int(candidate["y"]) + int(candidate["height"]) and int(candidate["y"]) < int(target["y"]) + int(target["height"])
+        if time_overlap and x_overlap and y_overlap:
+            count += 1
+
+    return count
+
+
 def _build_demo_html(
     *,
     instance_name: str,
@@ -190,6 +374,7 @@ def _build_demo_html(
     diagnostics,
     official_summary: dict[str, object] | None,
     official_error: str | None,
+    report_evidence: dict[str, object] | None,
 ) -> str:
     search_delta = search_state.objective_value - constructive_state.objective_value
     official_section = _render_official_comparison(official_summary, official_error)
