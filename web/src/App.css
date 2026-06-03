@@ -2328,8 +2328,16 @@ code {
 }
 
 .showcase-yard-shell .yard-svg {
-  width: 100%;
+  width: min(100%, 560px);
   height: auto;
+}
+
+.showcase-yard-shell .svg-label {
+  font-size: 10px;
+}
+
+.showcase-yard-shell .svg-label.small {
+  font-size: 8px;
 }
 
 .showcase-replay-shell {

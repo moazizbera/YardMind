@@ -809,7 +809,7 @@ function App() {
               </p>
             </div>
             <div className="showcase-stage-shell showcase-stage-shell-development showcase-yard-shell">
-              <DevelopmentYard solution={activeDevelopmentSolution} yard={data.yard} scale={16} />
+              <DevelopmentYard solution={activeDevelopmentSolution} yard={data.yard} scale={24} />
             </div>
           </div>
           <aside className="showcase-sidebar">
